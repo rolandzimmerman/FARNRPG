@@ -1,0 +1,26 @@
+{
+  "$GMRoomUI":"",
+  "%Name":"RoomUI",
+  "children":[
+    {"$GMRUILayer":"v1","%Name":"ui_radial_menu","alignItems":2,"children":[
+        {"$GMRSpriteGraphic":"v1","%Name":"graphic_5CFD1C44","animationSpeed":1.0,"colour":4294967295,"flexProperties":{"$InstanceFlexProps":"v1","anchor":0,"resourceType":"InstanceFlexProps",},"frozen":false,"headPosition":0.0,"ignore":false,"inheritedItemId":null,"inheritItemSettings":false,"name":"graphic_5CFD1C44","resourceType":"GMRSpriteGraphic","resourceVersion":"2.0","rotation":35.0,"scaleX":0.5,"scaleY":0.5,"spriteId":{"name":"spr_attack","path":"sprites/spr_attack/spr_attack.yy",},"x":-5.829918,"y":687.82916,},
+        {"$GMRSpriteGraphic":"v1","%Name":"graphic_76729554","animationSpeed":1.0,"colour":4294967295,"flexProperties":{"$InstanceFlexProps":"v1","anchor":0,"resourceType":"InstanceFlexProps",},"frozen":false,"headPosition":0.0,"ignore":false,"inheritedItemId":null,"inheritItemSettings":false,"name":"graphic_76729554","resourceType":"GMRSpriteGraphic","resourceVersion":"2.0","rotation":35.0,"scaleX":0.5,"scaleY":0.5,"spriteId":{"name":"spr_items","path":"sprites/spr_items/spr_items.yy",},"x":133.0,"y":497.68073,},
+        {"$GMRSpriteGraphic":"v1","%Name":"graphic_717B9474","animationSpeed":1.0,"colour":4294967295,"flexProperties":{"$InstanceFlexProps":"v1","anchor":0,"resourceType":"InstanceFlexProps",},"frozen":false,"headPosition":0.0,"ignore":false,"inheritedItemId":null,"inheritItemSettings":false,"name":"graphic_717B9474","resourceType":"GMRSpriteGraphic","resourceVersion":"2.0","rotation":35.0,"scaleX":0.5,"scaleY":0.5,"spriteId":{"name":"spr_defend","path":"sprites/spr_defend/spr_defend.yy",},"x":195.91496,"y":563.75494,},
+        {"$GMRSpriteGraphic":"v1","%Name":"graphic_6FFBDE72","animationSpeed":1.0,"colour":4294967295,"flexProperties":{"$InstanceFlexProps":"v1","anchor":0,"resourceType":"InstanceFlexProps",},"frozen":false,"headPosition":0.0,"ignore":false,"inheritedItemId":null,"inheritItemSettings":false,"name":"graphic_6FFBDE72","resourceType":"GMRSpriteGraphic","resourceVersion":"2.0","rotation":35.0,"scaleX":0.5,"scaleY":0.5,"spriteId":{"name":"spr_special","path":"sprites/spr_special/spr_special.yy",},"x":-14.914967,"y":563.75494,},
+        {"$GMRSpriteGraphic":"v1","%Name":"graphic_4BC93458","animationSpeed":1.0,"colour":4294967295,"flexProperties":{"$InstanceFlexProps":"v1","anchor":0,"resourceType":"InstanceFlexProps",},"frozen":false,"headPosition":0.0,"ignore":false,"inheritedItemId":null,"inheritItemSettings":false,"name":"graphic_4BC93458","resourceType":"GMRSpriteGraphic","resourceVersion":"2.0","rotation":0.0,"scaleX":0.5,"scaleY":0.5,"spriteId":{"name":"Ybutton","path":"sprites/Ybutton/Ybutton.yy",},"x":97.0,"y":501.0,},
+        {"$GMRSpriteGraphic":"v1","%Name":"graphic_2497D9D1","animationSpeed":1.0,"colour":4294967295,"flexProperties":{"$InstanceFlexProps":"v1","anchor":0,"resourceType":"InstanceFlexProps",},"frozen":false,"headPosition":0.0,"ignore":false,"inheritedItemId":null,"inheritItemSettings":false,"name":"graphic_2497D9D1","resourceType":"GMRSpriteGraphic","resourceVersion":"2.0","rotation":0.0,"scaleX":0.5,"scaleY":0.5,"spriteId":{"name":"Xbutton","path":"sprites/Xbutton/Xbutton.yy",},"x":48.0,"y":559.0,},
+        {"$GMRSpriteGraphic":"v1","%Name":"graphic_32B06422","animationSpeed":1.0,"colour":4294967295,"flexProperties":{"$InstanceFlexProps":"v1","anchor":0,"resourceType":"InstanceFlexProps",},"frozen":false,"headPosition":0.0,"ignore":false,"inheritedItemId":null,"inheritItemSettings":false,"name":"graphic_32B06422","resourceType":"GMRSpriteGraphic","resourceVersion":"2.0","rotation":0.0,"scaleX":0.5,"scaleY":0.5,"spriteId":{"name":"Bbutton","path":"sprites/Bbutton/Bbutton.yy",},"x":147.0,"y":557.0,},
+        {"$GMRSpriteGraphic":"v1","%Name":"graphic_16A536ED","animationSpeed":1.0,"colour":4294967295,"flexProperties":{"$InstanceFlexProps":"v1","anchor":0,"resourceType":"InstanceFlexProps",},"frozen":false,"headPosition":0.0,"ignore":false,"inheritedItemId":null,"inheritItemSettings":false,"name":"graphic_16A536ED","resourceType":"GMRSpriteGraphic","resourceVersion":"2.0","rotation":0.0,"scaleX":0.5,"scaleY":0.5,"spriteId":{"name":"Abutton","path":"sprites/Abutton/Abutton.yy",},"x":97.0,"y":619.0,},
+      ],"flexDirection":0,"gridX":32,"gridY":32,"justifyContent":1,"name":"ui_radial_menu","nodeColour":4282962418,"resourceType":"GMRUILayer","resourceVersion":"2.0",},
+  ],
+  "locked":false,
+  "name":"RoomUI",
+  "parent":{
+    "name":"FARNRPG",
+    "path":"FARNRPG.yyp",
+  },
+  "resourceType":"GMRoomUI",
+  "resourceVersion":"2.0",
+  "viewspaceChildren":[],
+  "visible":false,
+}

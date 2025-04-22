@@ -1,0 +1,19 @@
+# GameMaker Studio 2 cache & lock files
+*.yyp.lock
+*.yycache
+cache/
+temp/
+
+# Compiled output
+*.exe
+*.apk
+*.ipa
+*.aab
+
+# IDE-specific
+.idea/
+.vscode/
+
+# OS-generated
+.DS_Store
+Thumbs.db
