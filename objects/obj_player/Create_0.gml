@@ -9,33 +9,40 @@ if (!variable_instance_exists(id, "initialized")) {
     show_debug_message("!!! obj_player CREATE: First Time Initialization !!!");
 
     // ── Movement & world setup ──
-    move_speed = 2;
-    tilemap    = layer_tilemap_get_id("Tiles_Col"); // Ensure this layer exists in your room
+    move_speed = 4;
+    tilemap    = layer_tilemap_get_id("Tiles_Col"); // Get ID for collision layer
+    // --- ADD LOGGING ---
+    show_debug_message("  -> Initialized 'tilemap' variable with ID: " + string(tilemap));
+    if (tilemap == -1) {
+         show_debug_message("  -> WARNING: layer_tilemap_get_id('Tiles_Col') failed! Collision will not work correctly.");
+    }
+    // --- END LOGGING ---
     if (script_exists(scr_InitRoomMap)) scr_InitRoomMap();
     // Encounter table init moved to obj_init
 
-    // ── Base stats ──
+    // ── Base stats (ADDED matk, mdef, spd, luk) ──
     hp_total   = 40;    hp   = hp_total;
     mp_total   = 20;    mp   = mp_total;
-    atk        = 10;
-    def        = 5;
+    atk        = 10;    // Physical Attack
+    def        = 5;     // Physical Defense
+    matk       = 8;     // Magic Attack
+    mdef       = 4;     // Magic Defense
+    spd        = 7;     // Speed (for turn order, evasion later?)
+    luk        = 5;     // Luck (for critical hits, item drops later?)
 
     // Skills
     skills = [
-        // Ensure these structs have all necessary properties (name, cost, effect, requires_target, damage/heal_amount etc.)
-        { name: "Heal", cost: 5, effect: "heal_hp", requires_target: false, heal_amount: 25 },
-        { name: "Fireball", cost: 6, effect: "damage_enemy", requires_target: true, damage: 18, element: "fire" }
+        { name: "Heal", cost: 5, effect: "heal_hp", requires_target: false, heal_amount: 25, power_stat: "matk" }, // Example: Heal power based on matk?
+        { name: "Fireball", cost: 6, effect: "damage_enemy", requires_target: true, damage: 18, element: "fire", power_stat: "matk" } // Fireball uses matk
     ];
 
     // ── Inventory ──
     inventory = [
-        // Start with one of each item defined in scr_ItemDatabase
         { item_key: "potion", quantity: 1 },
         { item_key: "bomb", quantity: 1 },
         { item_key: "antidote", quantity: 1 }
-        // Add more starting items if desired
     ];
-    show_debug_message("  -> Player Inventory Initialized: " + string(inventory)); // Log initial items
+    show_debug_message("  -> Player Inventory Initialized.");
 
     // ── Leveling ──
     level      = 1;
@@ -55,9 +62,9 @@ if (!variable_instance_exists(id, "initialized")) {
         while (xp >= xp_require) {
             _levelled_up_this_call = true;
             xp -= xp_require; level += 1; var _old_req = xp_require; xp_require = floor(xp_require * 1.4);
-            hp_total += 5; mp_total += 3; atk += 1; def += 1;
+            hp_total += 5; mp_total += 3; atk += 1; def += 1; matk += 2; mdef += 1; spd += 1; luk += 1;
             hp = hp_total; mp = mp_total;
-            if (script_exists(scr_dialogue)) { create_dialog([{ name:"Level Up!", msg: "You reached level " + string(level) + "!\n" + "HP: " + string(hp_total) + "\n" + "MP: " + string(mp_total) + "\n" + "ATK: " + string(atk) + "\n" + "DEF: " + string(def) }]); }
+            if (script_exists(scr_dialogue)) { create_dialog([{ name:"Level Up!", msg: "Reached level " + string(level) + "!\n" + "HP: " + string(hp_total) + " | MP: " + string(mp_total) + "\n" + "ATK: " + string(atk) + " | DEF: " + string(def) + "\n" + "MATK: "+ string(matk)+ " | MDEF: "+ string(mdef)+ "\n" + "SPD: " + string(spd) + " | LUK: " + string(luk) }]); }
         }
         if (_levelled_up_this_call) { show_debug_message("$$$ Finished Level Up Process! Current Level: " + string(level)); }
         else { show_debug_message("--- add_xp Function END (No level up occurred) ---"); }

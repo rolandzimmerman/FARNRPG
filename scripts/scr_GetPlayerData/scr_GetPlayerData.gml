@@ -4,27 +4,33 @@ function scr_GetPlayerData() {
     // Ensure the persistent player object exists
     if (!instance_exists(obj_player)) {
         show_debug_message("ERROR [scr_GetPlayerData]: obj_player instance not found!");
-        // Return an empty struct or default data to prevent crashes,
-        // though the battle manager should ideally prevent battle start without player.
+        // Return default data with new stats
         return {
-             hp: 1, maxhp: 1, mp: 0, maxmp: 0, atk: 1, def: 1, skills: [], skill_index: 0, is_defending: false
+             hp: 1, maxhp: 1, mp: 0, maxmp: 0, atk: 1, def: 1,
+             matk: 1, mdef: 1, spd: 1, luk: 1, // Added defaults
+             skills: [], skill_index: 0, item_index: 0, is_defending: false,
+             status: "none"
         };
     }
 
     // Create and return a struct with copies of relevant stats
-    // Assumes obj_player has these variables defined (hp, hp_total, mp, mp_total, atk, def, skills)
+    // Assumes obj_player has these variables defined
     return {
         hp:           obj_player.hp,
-        maxhp:        obj_player.hp_total, // Use hp_total from obj_player
+        maxhp:        obj_player.hp_total,
         mp:           obj_player.mp,
-        maxmp:        obj_player.mp_total, // Use mp_total from obj_player
+        maxmp:        obj_player.mp_total,
         atk:          obj_player.atk,
         def:          obj_player.def,
-        // Add any other stats needed in battle (magic etc.)
-        // magic_atk: obj_player.magic_atk,
+        matk:         obj_player.matk,     // <<< ADDED
+        mdef:         obj_player.mdef,     // <<< ADDED
+        spd:          obj_player.spd,      // <<< ADDED
+        luk:          obj_player.luk,      // <<< ADDED
 
-        skills:       obj_player.skills, // Copy the array reference (assuming skills don't change IN battle)
-        skill_index:  0,                 // Battle-specific starting value
-        is_defending: false              // Battle-specific starting value
+        skills:       obj_player.skills,   // Copy the array reference
+        skill_index:  0,
+        item_index:   0,
+        is_defending: false,
+        status:       "none"
     };
 }

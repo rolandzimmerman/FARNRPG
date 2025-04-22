@@ -55,3 +55,5 @@ show_debug_message("========================================");
 
 // Optional: Destroy self if only used for init
 // instance_destroy();
+// In obj_init Create Event
+global.entry_direction = "none"; // Stores how player entered the current room
