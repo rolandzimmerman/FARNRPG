@@ -1,4 +1,7 @@
 /// obj_battle_player :: Create Event
-// Initializes the data variable. Stats will be assigned by obj_battle_manager.
+// Minimal initialization. Data and sprite assigned later in Step Event.
 
-data = {}; // Initialize as an empty struct
+show_debug_message("--- obj_battle_player Create Start (Instance: " + string(id) + ") ---");
+// The 'data' variable is assigned by obj_battle_manager AFTER this event.
+// Sprite will be set in the Step event once data is available.
+sprite_assigned = false; // Flag to ensure sprite is set only once

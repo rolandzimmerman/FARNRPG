@@ -8,40 +8,48 @@ if (!variable_instance_exists(id, "initialized")) {
     initialized = true;
     show_debug_message("!!! obj_player CREATE: First Time Initialization !!!");
 
-    // ── Movement & world setup ──
-    move_speed = 4;
-    tilemap    = layer_tilemap_get_id("Tiles_Col"); // Get ID for collision layer
-    // --- ADD LOGGING ---
-    show_debug_message("  -> Initialized 'tilemap' variable with ID: " + string(tilemap));
-    if (tilemap == -1) {
-         show_debug_message("  -> WARNING: layer_tilemap_get_id('Tiles_Col') failed! Collision will not work correctly.");
+    // --- Add self to the global party list ---
+    // SAFETY CHECK: Ensure the list exists before trying to add to it.
+    // The root cause is likely obj_init running AFTER obj_player, fix creation order in Room1.
+    if (variable_global_exists("party_members")) {
+        if (is_array(global.party_members)) {
+            // Add the key corresponding to this player character in the database
+            array_push(global.party_members, "hero"); // Add "hero" key
+            show_debug_message("  -> Added 'hero' to global.party_members. Current Party: " + string(global.party_members));
+        } else {
+             show_debug_message("  -> ERROR: global.party_members exists but is not an array!");
+             // Force creation if it's wrong type? Risky.
+             // global.party_members = ["hero"];
+        }
+    } else {
+        show_debug_message("  -> WARNING: global.party_members array not found! Cannot add player to party. (Check obj_init creation order in Room1)");
+        // Don't create it here, let obj_init handle it.
     }
-    // --- END LOGGING ---
-    if (script_exists(scr_InitRoomMap)) scr_InitRoomMap();
-    // Encounter table init moved to obj_init
+    // --- End Add Self to Party ---
 
-    // ── Base stats (ADDED matk, mdef, spd, luk) ──
+
+    // ── Movement & world setup ──
+    move_speed = 2;
+    tilemap    = layer_tilemap_get_id("Tiles_Col");
+    show_debug_message("  -> Initialized 'tilemap' variable with ID: " + string(tilemap));
+    if (script_exists(scr_InitRoomMap)) scr_InitRoomMap();
+
+
+    // ── Base stats (These are the persistent stats) ──
     hp_total   = 40;    hp   = hp_total;
     mp_total   = 20;    mp   = mp_total;
-    atk        = 10;    // Physical Attack
-    def        = 5;     // Physical Defense
-    matk       = 8;     // Magic Attack
-    mdef       = 4;     // Magic Defense
-    spd        = 7;     // Speed (for turn order, evasion later?)
-    luk        = 5;     // Luck (for critical hits, item drops later?)
+    atk        = 10;    def  = 5;
+    matk       = 8;     mdef = 4;
+    spd        = 7;     luk  = 5;
 
     // Skills
     skills = [
-        { name: "Heal", cost: 5, effect: "heal_hp", requires_target: false, heal_amount: 25, power_stat: "matk" }, // Example: Heal power based on matk?
-        { name: "Fireball", cost: 6, effect: "damage_enemy", requires_target: true, damage: 18, element: "fire", power_stat: "matk" } // Fireball uses matk
+        { name: "Heal", cost: 5, effect: "heal_hp", requires_target: false, heal_amount: 25, power_stat: "matk" },
+        { name: "Fireball", cost: 6, effect: "damage_enemy", requires_target: true, damage: 18, element: "fire", power_stat: "matk" }
     ];
 
     // ── Inventory ──
-    inventory = [
-        { item_key: "potion", quantity: 1 },
-        { item_key: "bomb", quantity: 1 },
-        { item_key: "antidote", quantity: 1 }
-    ];
+    inventory = [ { item_key: "potion", quantity: 1 }, { item_key: "bomb", quantity: 1 }, { item_key: "antidote", quantity: 1 } ];
     show_debug_message("  -> Player Inventory Initialized.");
 
     // ── Leveling ──
@@ -50,7 +58,7 @@ if (!variable_instance_exists(id, "initialized")) {
     xp_require = 100;
 
     // Initialize the variable for the add_xp method here
-    add_xp = function(_gain) {
+    add_xp = function(_gain) {/*
         show_debug_message("--- add_xp Function START ---");
         show_debug_message("  Received _gain: " + string(_gain));
         if (!variable_instance_exists(id,"xp") || !variable_instance_exists(id,"xp_require") || !variable_instance_exists(id,"level")) { return; }
@@ -68,6 +76,6 @@ if (!variable_instance_exists(id, "initialized")) {
         }
         if (_levelled_up_this_call) { show_debug_message("$$$ Finished Level Up Process! Current Level: " + string(level)); }
         else { show_debug_message("--- add_xp Function END (No level up occurred) ---"); }
-    }
+    */}
 
 } // End if !initialized
