@@ -9,22 +9,12 @@ if (!variable_instance_exists(id, "initialized")) {
     show_debug_message("!!! obj_player CREATE: First Time Initialization !!!");
 
     // --- Add self to the global party list ---
-    // SAFETY CHECK: Ensure the list exists before trying to add to it.
-    // The root cause is likely obj_init running AFTER obj_player, fix creation order in Room1.
     if (variable_global_exists("party_members")) {
         if (is_array(global.party_members)) {
-            // Add the key corresponding to this player character in the database
-            array_push(global.party_members, "hero"); // Add "hero" key
+            array_push(global.party_members, "hero");
             show_debug_message("  -> Added 'hero' to global.party_members. Current Party: " + string(global.party_members));
-        } else {
-             show_debug_message("  -> ERROR: global.party_members exists but is not an array!");
-             // Force creation if it's wrong type? Risky.
-             // global.party_members = ["hero"];
-        }
-    } else {
-        show_debug_message("  -> WARNING: global.party_members array not found! Cannot add player to party. (Check obj_init creation order in Room1)");
-        // Don't create it here, let obj_init handle it.
-    }
+        } else { /* Error */ }
+    } else { show_debug_message("  -> WARNING: global.party_members array not found! Cannot add player to party."); }
     // --- End Add Self to Party ---
 
 
@@ -42,7 +32,7 @@ if (!variable_instance_exists(id, "initialized")) {
     matk       = 8;     mdef = 4;
     spd        = 7;     luk  = 5;
 
-    // Skills
+    // Skills (These are the persistent skills known by the player)
     skills = [
         { name: "Heal", cost: 5, effect: "heal_hp", requires_target: false, heal_amount: 25, power_stat: "matk" },
         { name: "Fireball", cost: 6, effect: "damage_enemy", requires_target: true, damage: 18, element: "fire", power_stat: "matk" }
@@ -55,27 +45,12 @@ if (!variable_instance_exists(id, "initialized")) {
     // ── Leveling ──
     level      = 1;
     xp         = 0;
-    xp_require = 100;
+    // Use the function to get initial requirement
+    // Ensure scr_LevelingSystem script runs before this object if GetXPForLevel is needed here
+    xp_require = (script_exists(scr_GetXPForLevel)) ? scr_GetXPForLevel(level + 1) : 100;
 
-    // Initialize the variable for the add_xp method here
-    add_xp = function(_gain) {/*
-        show_debug_message("--- add_xp Function START ---");
-        show_debug_message("  Received _gain: " + string(_gain));
-        if (!variable_instance_exists(id,"xp") || !variable_instance_exists(id,"xp_require") || !variable_instance_exists(id,"level")) { return; }
-        if (!is_real(xp) || !is_real(_gain) || !is_real(xp_require)) { return; }
-        show_debug_message("  XP Before Add: " + string(xp) + "/" + string(xp_require) + " | Level: " + string(level));
-        xp += _gain;
-        show_debug_message("  XP After Add: " + string(xp) + "/" + string(xp_require));
-        var _levelled_up_this_call = false;
-        while (xp >= xp_require) {
-            _levelled_up_this_call = true;
-            xp -= xp_require; level += 1; var _old_req = xp_require; xp_require = floor(xp_require * 1.4);
-            hp_total += 5; mp_total += 3; atk += 1; def += 1; matk += 2; mdef += 1; spd += 1; luk += 1;
-            hp = hp_total; mp = mp_total;
-            if (script_exists(scr_dialogue)) { create_dialog([{ name:"Level Up!", msg: "Reached level " + string(level) + "!\n" + "HP: " + string(hp_total) + " | MP: " + string(mp_total) + "\n" + "ATK: " + string(atk) + " | DEF: " + string(def) + "\n" + "MATK: "+ string(matk)+ " | MDEF: "+ string(mdef)+ "\n" + "SPD: " + string(spd) + " | LUK: " + string(luk) }]); }
-        }
-        if (_levelled_up_this_call) { show_debug_message("$$$ Finished Level Up Process! Current Level: " + string(level)); }
-        else { show_debug_message("--- add_xp Function END (No level up occurred) ---"); }
-    */}
+
+    // --- REMOVED old add_xp function ---
+    // add_xp = function(_gain) { /* ... Old Level up logic ... */ };
 
 } // End if !initialized

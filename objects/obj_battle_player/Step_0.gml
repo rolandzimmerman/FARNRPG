@@ -19,18 +19,50 @@ if (!sprite_assigned && variable_instance_exists(id, "data") && is_struct(data))
 
 
 // --- Active Turn Check ---
-if (!variable_global_exists("active_party_member_index") || !variable_instance_exists(id,"data") || !is_struct(data) || !variable_struct_exists(data, "party_slot_index")) { exit; }
-if (data.party_slot_index != global.active_party_member_index) { exit; }
-// --- End Turn Check ---
-
-
-// Exit check for battle state - This object ONLY handles menu input now
-if (global.battle_state != "player_input" &&
-    global.battle_state != "skill_select" &&
-    global.battle_state != "item_select")
+// Ensure needed variables exist before checking turn
+if (!variable_global_exists("active_party_member_index") ||
+    !variable_instance_exists(id,"data") || !is_struct(data) ||
+    !variable_struct_exists(data, "party_slot_index"))
 {
+    // Log if essential data is missing
+    // show_debug_message("Player " + string(id) + " Step: Missing essential data for turn check.");
+    exit; // Cannot determine turn, do nothing
+}
+
+var _my_slot_index = data.party_slot_index;
+var _active_turn_index = global.active_party_member_index;
+var _current_battle_state = global.battle_state;
+
+// --- ADDED DETAILED LOGGING ---
+// Log every step for this instance when it *should* be player input time
+if (_current_battle_state == "player_input") {
+     show_debug_message("Player " + string(id) + " (Slot " + string(_my_slot_index) + ") Step Check | State: " + _current_battle_state + " | Active Index: " + string(_active_turn_index));
+}
+// --- END LOGGING ---
+
+// Exit if it's not this character's turn index
+if (_my_slot_index != _active_turn_index) {
+    // if (_current_battle_state == "player_input") { // Optional: Log only when relevant
+    //     show_debug_message(" -> Instance " + string(id) + " (Slot " + string(_my_slot_index) + ") is NOT active.");
+    // }
     exit;
 }
+// --- End Turn Check ---
+
+// If we reach here, it IS this instance's turn.
+
+// Exit check for battle state - This object ONLY handles menu input now
+if (_current_battle_state != "player_input" &&
+    _current_battle_state != "skill_select" &&
+    _current_battle_state != "item_select")
+{
+     show_debug_message("Player " + string(id) + " (Slot " + string(_my_slot_index) + ") Step: Exiting - Wrong state (" + _current_battle_state + ")");
+    exit; // Do nothing if not in a menu state
+}
+
+// --- Log which instance is processing input ---
+show_debug_message(">>> Player Instance " + string(id) + " (Slot " + string(_my_slot_index) + ") PROCESSING INPUT in state: " + _current_battle_state);
+// ---
 
 var d = data; // Use shorthand
 
@@ -55,22 +87,22 @@ if (tot_items > 0) d.item_index = clamp(d.item_index, 0, tot_items - 1); else d.
 
 
 // === State-Specific Input Handling (for Active Player in Menus) ===
-if (global.battle_state == "skill_select") {
+if (_current_battle_state == "skill_select") {
     // --- Skill Menu Input ---
     if (tot_skills > 0) { if (U) d.skill_index=(d.skill_index-1+tot_skills)%tot_skills; if (D) d.skill_index=(d.skill_index+1)%tot_skills; }
-    if (A) { if (tot_skills > 0) { var _s = skills[d.skill_index]; if (is_struct(_s) && variable_struct_exists(_s,"cost")) { if (d.mp >= _s.cost) { var _nt = variable_struct_exists(_s, "requires_target") ? _s.requires_target : true; if (_nt) { if (ds_list_size(global.battle_enemies) > 0) { obj_battle_manager.stored_action_data = _s; global.battle_target = 0; global.battle_state = "TargetSelect"; show_debug_message("Player Input: Skill selected -> TargetSelect"); } } else { obj_battle_manager.stored_action_data = _s; obj_battle_manager.selected_target_id = noone; global.battle_state = "ExecutingAction"; show_debug_message("Player Input: Skill selected -> ExecutingAction"); } } else { /* Not enough MP */ } } } }
-    else if (B) { global.battle_state = "player_input"; show_debug_message("Player Input: Cancelled Skill Menu -> player_input"); }
+    if (A) { if (tot_skills > 0) { var _s = skills[d.skill_index]; if (is_struct(_s) && variable_struct_exists(_s,"cost")) { if (d.mp >= _s.cost) { var _nt = variable_struct_exists(_s, "requires_target") ? _s.requires_target : true; if (_nt) { if (ds_list_size(global.battle_enemies) > 0) { obj_battle_manager.stored_action_data = _s; global.battle_target = 0; global.battle_state = "TargetSelect"; } } else { obj_battle_manager.stored_action_data = _s; obj_battle_manager.selected_target_id = noone; global.battle_state = "ExecutingAction"; } } } } }
+    else if (B) { global.battle_state = "player_input"; }
 }
-else if (global.battle_state == "item_select") {
+else if (_current_battle_state == "item_select") {
     // --- Item Menu Input ---
      if (tot_items > 0) { if (U) d.item_index = (d.item_index - 1 + tot_items) mod tot_items; if (D) d.item_index = (d.item_index + 1) mod tot_items; }
-     if (A) { if (tot_items > 0) { var _inv_entry = current_inventory[d.item_index]; var _item_data = scr_GetItemData(_inv_entry.item_key); if (is_struct(_item_data) && _item_data.usable_in_battle) { obj_battle_manager.stored_action_data = _item_data; var _target_type = _item_data.target; var _next_state = global.battle_state; if (_target_type == "enemy") { if (ds_list_size(global.battle_enemies) > 0) { global.battle_target = 0; _next_state = "TargetSelect"; show_debug_message("Player Input: Item selected -> TargetSelect"); } else { obj_battle_manager.stored_action_data = undefined; _next_state = "item_select"; /* No target */ } } else { obj_battle_manager.selected_target_id = id; _next_state = "ExecutingAction"; show_debug_message("Player Input: Item selected -> ExecutingAction"); } if (_next_state != "item_select") { _inv_entry.quantity -= 1; if (_inv_entry.quantity <= 0) { array_delete(obj_player.inventory, d.item_index, 1); d.item_index = max(0, d.item_index - 1); } global.battle_state = _next_state; } } } }
-     else if (B) { global.battle_state = "player_input"; show_debug_message("Player Input: Cancelled Item Menu -> player_input"); }
+     if (A) { if (tot_items > 0) { var _inv_entry = current_inventory[d.item_index]; var _item_data = scr_GetItemData(_inv_entry.item_key); if (is_struct(_item_data) && _item_data.usable_in_battle) { obj_battle_manager.stored_action_data = _item_data; var _target_type = _item_data.target; var _next_state = global.battle_state; if (_target_type == "enemy") { if (ds_list_size(global.battle_enemies) > 0) { global.battle_target = 0; _next_state = "TargetSelect"; } else { obj_battle_manager.stored_action_data = undefined; _next_state = "item_select"; } } else { obj_battle_manager.selected_target_id = id; _next_state = "ExecutingAction"; } if (_next_state != "item_select") { _inv_entry.quantity -= 1; if (_inv_entry.quantity <= 0) { array_delete(obj_player.inventory, d.item_index, 1); d.item_index = max(0, d.item_index - 1); } global.battle_state = _next_state; } } } }
+     else if (B) { global.battle_state = "player_input"; }
 }
-else if (global.battle_state == "player_input") {
+else if (_current_battle_state == "player_input") {
     // --- Main Menu Input ---
-    if (X) { global.battle_state = "skill_select"; d.skill_index = 0; show_debug_message("Player Input: X pressed -> skill_select"); }
-    else if (Y) { if (tot_items > 0) { global.battle_state = "item_select"; d.item_index = 0; show_debug_message("Player Input: Y pressed -> item_select"); } else { show_debug_message("Player Input: Y pressed -> Inventory Empty"); } }
-    else if (A) { if (ds_list_size(global.battle_enemies) > 0) { obj_battle_manager.stored_action_data = "Attack"; global.battle_target = 0; global.battle_state = "TargetSelect"; show_debug_message("Player Input: A pressed -> TargetSelect (Attack)"); } }
-    else if (B) { obj_battle_manager.stored_action_data = "Defend"; obj_battle_manager.selected_target_id = noone; global.battle_state = "ExecutingAction"; show_debug_message("Player Input: B pressed -> ExecutingAction (Defend)"); }
+    if (X) { global.battle_state = "skill_select"; d.skill_index = 0; }
+    else if (Y) { if (tot_items > 0) { global.battle_state = "item_select"; d.item_index = 0; } }
+    else if (A) { if (ds_list_size(global.battle_enemies) > 0) { obj_battle_manager.stored_action_data = "Attack"; global.battle_target = 0; global.battle_state = "TargetSelect"; } }
+    else if (B) { obj_battle_manager.stored_action_data = "Defend"; obj_battle_manager.selected_target_id = noone; global.battle_state = "ExecutingAction"; }
 }
