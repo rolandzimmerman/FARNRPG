@@ -3,6 +3,10 @@
 // Persist this player across rooms
 persistent = true;
 
+// --- ADDED LOG: Check if Create Event runs unexpectedly ---
+show_debug_message("--- obj_player Create Event RUNNING (Instance ID: " + string(id) + ") ---");
+// --- END LOG ---
+
 // Only initialize these base stats once
 if (!variable_instance_exists(id, "initialized")) {
     initialized = true;
@@ -13,15 +17,14 @@ if (!variable_instance_exists(id, "initialized")) {
         if (is_array(global.party_members)) {
             array_push(global.party_members, "hero");
             show_debug_message("  -> Added 'hero' to global.party_members. Current Party: " + string(global.party_members));
-        } else { /* Error */ }
-    } else { show_debug_message("  -> WARNING: global.party_members array not found! Cannot add player to party."); }
+        }
+    } else { /* Handle error */ }
     // --- End Add Self to Party ---
 
 
     // ── Movement & world setup ──
     move_speed = 2;
     tilemap    = layer_tilemap_get_id("Tiles_Col");
-    show_debug_message("  -> Initialized 'tilemap' variable with ID: " + string(tilemap));
     if (script_exists(scr_InitRoomMap)) scr_InitRoomMap();
 
 
@@ -32,7 +35,7 @@ if (!variable_instance_exists(id, "initialized")) {
     matk       = 8;     mdef = 4;
     spd        = 7;     luk  = 5;
 
-    // Skills (These are the persistent skills known by the player)
+    // Skills
     skills = [
         { name: "Heal", cost: 5, effect: "heal_hp", requires_target: false, heal_amount: 25, power_stat: "matk" },
         { name: "Fireball", cost: 6, effect: "damage_enemy", requires_target: true, damage: 18, element: "fire", power_stat: "matk" }
@@ -40,17 +43,10 @@ if (!variable_instance_exists(id, "initialized")) {
 
     // ── Inventory ──
     inventory = [ { item_key: "potion", quantity: 1 }, { item_key: "bomb", quantity: 1 }, { item_key: "antidote", quantity: 1 } ];
-    show_debug_message("  -> Player Inventory Initialized.");
 
     // ── Leveling ──
     level      = 1;
     xp         = 0;
-    // Use the function to get initial requirement
-    // Ensure scr_LevelingSystem script runs before this object if GetXPForLevel is needed here
     xp_require = (script_exists(scr_GetXPForLevel)) ? scr_GetXPForLevel(level + 1) : 100;
-
-
-    // --- REMOVED old add_xp function ---
-    // add_xp = function(_gain) { /* ... Old Level up logic ... */ };
 
 } // End if !initialized

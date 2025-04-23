@@ -1,9 +1,9 @@
 {
   "$GMScript":"v1",
-  "%Name":"scr_LevelingSysstem",
+  "%Name":"scr_LevelingSystem",
   "isCompatibility":false,
   "isDnD":false,
-  "name":"scr_LevelingSysstem",
+  "name":"scr_LevelingSystem",
   "parent":{
     "name":"Scripts",
     "path":"folders/Scripts.yy",

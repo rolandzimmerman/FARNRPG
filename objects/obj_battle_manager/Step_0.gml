@@ -2,15 +2,7 @@
 // Manages battle state, actions, UI visibility, status effects, party turn order, and target selection.
 
 // --- Control UI Layer Visibility ---
-if (variable_global_exists("layer_id_radial_menu") && global.layer_id_radial_menu != -1) {
-    var _lid = global.layer_id_radial_menu;
-    if (layer_exists(_lid)) {
-        var _should_be_visible = (global.battle_state == "player_input");
-        if (layer_get_visible(_lid) != _should_be_visible) {
-            layer_set_visible(_lid, _should_be_visible);
-        }
-    }
-}
+if (variable_global_exists("layer_id_radial_menu") && global.layer_id_radial_menu != -1) { var _lid = global.layer_id_radial_menu; if (layer_exists(_lid)) { var _sv = (global.battle_state == "player_input"); if (layer_get_visible(_lid) != _sv) { layer_set_visible(_lid, _sv); } } }
 
 // Process current battle state
 switch (global.battle_state) {
@@ -18,7 +10,6 @@ switch (global.battle_state) {
     case "player_input":
     case "skill_select":
     case "item_select":
-        // Manager waits - Input handled by the active obj_battle_player instance
     break; // Break for these waiting states
 
     case "TargetSelect":
@@ -26,42 +17,30 @@ switch (global.battle_state) {
         var _enemy_count = ds_list_size(global.battle_enemies);
         if (_enemy_count <= 0) {
             global.battle_state = "check_win_loss";
-            // State changed, rely on outer break
         } else {
-            // Read Input
             var P = 0;
             var _up_pressed = keyboard_check_pressed(vk_up) || gamepad_button_check_pressed(P, gp_padu);
             var _down_pressed = keyboard_check_pressed(vk_down) || gamepad_button_check_pressed(P, gp_padd);
             var _confirm_pressed = keyboard_check_pressed(vk_enter) || keyboard_check_pressed(vk_space) || gamepad_button_check_pressed(P, gp_face1);
             var _cancel_pressed = keyboard_check_pressed(vk_escape) || gamepad_button_check_pressed(P, gp_face2);
 
-            // Handle Input
             if (_down_pressed) { global.battle_target = (global.battle_target + 1) % _enemy_count; }
             else if (_up_pressed) { global.battle_target = (global.battle_target - 1 + _enemy_count) % _enemy_count; }
             else if (_confirm_pressed) {
                 if (global.battle_target >= 0 && global.battle_target < _enemy_count) {
                      selected_target_id = global.battle_enemies[| global.battle_target];
-                     if (instance_exists(selected_target_id)) {
-                         global.battle_state = "ExecutingAction"; // Change state
-                         // --- FIX: Break immediately after setting state on confirm ---
-                         break;
-                         // --- END FIX ---
-                     } else { selected_target_id = noone; global.battle_target = 0; }
+                     if (instance_exists(selected_target_id)) { global.battle_state = "ExecutingAction"; break; } // Break after state change
+                     else { selected_target_id = noone; global.battle_target = 0; }
                 } else { selected_target_id = noone; global.battle_target = 0; }
-                 // If state didn't change, fall through to outer break
             }
             else if (_cancel_pressed) {
                 var _prev = "player_input"; if (is_struct(stored_action_data)) { if (variable_struct_exists(stored_action_data,"usable_in_battle")) _prev="item_select"; else if (variable_struct_exists(stored_action_data,"cost")) _prev="skill_select"; }
-                global.battle_state = _prev; // Change state
-                stored_action_data = undefined;
-                selected_target_id = noone;
-                // --- FIX: Break immediately after setting state on cancel ---
-                break;
-                // --- END FIX ---
+                global.battle_state = _prev; stored_action_data = undefined; selected_target_id = noone;
+                break; // Break after state change
             }
         }
     } // End of TargetSelect case logic block
-    break; // <<< Break for TargetSelect case (Handles up/down or no input)
+    break; // Break for TargetSelect case
 
 
      case "ExecutingAction":
@@ -140,11 +119,24 @@ switch (global.battle_state) {
 
              if (instance_exists(enemy_inst) && variable_instance_exists(enemy_inst,"data") && is_struct(enemy_inst.data) && enemy_inst.data.hp > 0) {
                  var enemy_data = enemy_inst.data;
-                 // --- Simple Attack AI ---
                  var party_size = ds_list_size(global.battle_party);
                  if (party_size > 0) {
-                     var living_targets = []; for (var pt = 0; pt < party_size; pt++) { var temp_target = global.battle_party[| pt]; if (instance_exists(temp_target) && variable_instance_exists(temp_target, "data") && is_struct(temp_target.data) && temp_target.data.hp > 0) { array_push(living_targets, temp_target); } }
-                     var target_player = noone; if (array_length(living_targets) > 0) { var random_index = irandom(array_length(living_targets) - 1); target_player = living_targets[random_index]; show_debug_message("      Enemy targeting random living player: " + target_player.data.name); }
+                     // --- Select a RANDOM LIVING target ---
+                     var living_targets = [];
+                     for (var pt = 0; pt < party_size; pt++) {
+                         var temp_target = global.battle_party[| pt];
+                         if (instance_exists(temp_target) && variable_instance_exists(temp_target, "data") && is_struct(temp_target.data) && temp_target.data.hp > 0) {
+                             array_push(living_targets, temp_target);
+                         }
+                     }
+
+                     var target_player = noone;
+                     if (array_length(living_targets) > 0) {
+                         var random_index = irandom(array_length(living_targets) - 1);
+                         target_player = living_targets[random_index];
+                         show_debug_message("      Enemy targeting random living player: " + target_player.data.name + " (Instance ID: " + string(target_player) + ")");
+                     } else { show_debug_message("      No living players found for enemy to target!"); }
+                     // --- END Targeting ---
 
                      if (instance_exists(target_player)) {
                          var target_data = target_player.data; var enemy_atk = enemy_data.atk; var player_def = target_data.def; var dmg = max(1, enemy_atk - player_def); if (target_data.is_defending) dmg = floor(dmg/2); target_data.hp -= dmg; target_data.hp = max(0, target_data.hp); var pop = instance_create_layer(target_player.x, target_player.y-64, "Instances", obj_popup_damage); if (pop!=noone) pop.damage_amount=string(dmg); target_data.is_defending = false;
@@ -152,10 +144,9 @@ switch (global.battle_state) {
                          if (target_data.hp <= 0) { global.battle_state = "check_win_loss"; alarm[0] = 5; _state_changed_during_action = true; }
                      } else { _enemy_action_complete = true; }
                  } else { _enemy_action_complete = true; }
-                 // --- End Simple Attack AI ---
              } else { _enemy_action_complete = true; }
 
-             // --- Advance to next enemy IF the state hasn't changed AND action completed ---
+             // --- Advance turn logic ---
              if (!_state_changed_during_action) {
                  if (_enemy_action_complete) {
                       global.enemy_turn_index++;
@@ -168,7 +159,7 @@ switch (global.battle_state) {
                  }
              }
 
-        } else { // Index was already >= _es
+        } else {
             global.battle_state = "check_win_loss";
         }
     } // End of enemy_turn case logic block
