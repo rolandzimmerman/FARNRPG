@@ -4,8 +4,8 @@
 show_debug_message("--- Battle Manager Create START --- Received Formation: " + string(global.battle_formation));
 
 /// ── Tweak these to shift ALL spawns ──
-var spawn_offset_x = -192;  // <-- move everything left/right
-var spawn_offset_y = -192;  // <-- move everything up/down
+var spawn_offset_x = -192;
+var spawn_offset_y = -192;
 
 // ── 1) Initialize or Clear DS Lists ──
 if (variable_global_exists("battle_enemies") && ds_exists(global.battle_enemies, ds_type_list)) {
@@ -30,7 +30,6 @@ global.active_party_member_index = 0;
 // ── 3) Spawn ALL Party Members at custom positions ──
 show_debug_message("--- Spawning Party Members ---");
 
-// each entry is [x, y, scale]
 var party_positions = [
     [576, 672, 1.00],
     [768+100, 416+192, 0.80],
@@ -41,6 +40,7 @@ var party_positions = [
 if (variable_global_exists("party_members") && is_array(global.party_members)) {
     var _party_size = array_length(global.party_members);
     show_debug_message("  Found " + string(_party_size) + " members in global.party_members");
+    show_debug_message("📋 Contents of global.party_members: " + string(global.party_members));
 
     var spawn_layer_player = layer_exists("Instances_Battle") ? "Instances_Battle" : "Instances";
     if (!layer_exists(spawn_layer_player)) {
@@ -64,6 +64,13 @@ if (variable_global_exists("party_members") && is_array(global.party_members)) {
             p_inst.image_xscale = sc;
             p_inst.image_yscale = sc;
             p_inst.data = scr_GetPlayerData(char_key);
+
+            if (!is_struct(p_inst.data)) {
+                show_debug_message("    -> ⚠️ scr_GetPlayerData returned INVALID for " + string(char_key));
+            } else {
+                show_debug_message("    -> ✅ scr_GetPlayerData for " + string(char_key) + " returned level " + string(p_inst.data.level) + " with " + string(array_length(p_inst.data.skills)) + " skills");
+            }
+
             if (is_struct(p_inst.data)) {
                 p_inst.data.party_slot_index = i;
                 ds_list_add(global.battle_party, p_inst);
@@ -86,7 +93,6 @@ show_debug_message("--- Finished Party spawn, count: " + string(ds_list_size(glo
 // ── 4) Spawn ALL Enemies at custom positions ──
 show_debug_message("--- Spawning Enemies ---");
 
-// each entry is [x, y, scale]
 var enemy_positions = [
     [1632, 800, 1.10],
     [1504, 544, 0.90],

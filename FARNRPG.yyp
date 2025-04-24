@@ -82,6 +82,7 @@
     {"id":{"name":"Drawing","path":"scripts/Drawing/Drawing.yy",},},
     {"id":{"name":"scr_AllEnemiesDefeated","path":"scripts/scr_AllEnemiesDefeated/scr_AllEnemiesDefeated.yy",},},
     {"id":{"name":"scr_BuildCharacterDB","path":"scripts/scr_BuildCharacterDB/scr_BuildCharacterDB.yy",},},
+    {"id":{"name":"scr_BuildSpellDB","path":"scripts/scr_BuildSpellDB/scr_BuildSpellDB.yy",},},
     {"id":{"name":"scr_CastSkill","path":"scripts/scr_CastSkill/scr_CastSkill.yy",},},
     {"id":{"name":"scr_dialogue","path":"scripts/scr_dialogue/scr_dialogue.yy",},},
     {"id":{"name":"scr_FetchCharacterInfo","path":"scripts/scr_FetchCharacterInfo/scr_FetchCharacterInfo.yy",},},

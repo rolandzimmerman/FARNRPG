@@ -16,10 +16,10 @@ function scr_BuildCharacterDB() {
         matk: 8, mdef: 4, spd: 7, luk: 5,
         // Starting Skills (Array of skill structs)
         skills: [
-             { name: "Heal", cost: 5, effect: "heal_hp", requires_target: false, heal_amount: 25, power_stat: "matk" },
-             { name: "Fireball", cost: 6, effect: "damage_enemy", requires_target: true, damage: 18, element: "fire", power_stat: "matk" },
-             { name: "Blind", cost: 5, effect: "blind",  duration: 3, requires_target: true },
-             { name: "Shame", cost: 8, effect: "shame",  duration: 3, requires_target: true },
+             //{ name: "Heal", cost: 5, effect: "heal_hp", requires_target: false, heal_amount: 25, power_stat: "matk" },
+             //{ name: "Fireball", cost: 6, effect: "damage_enemy", requires_target: true, damage: 18, element: "fire", power_stat: "matk" },
+             //{ name: "Blind", cost: 5, effect: "blind",  duration: 3, requires_target: true },
+             //{ name: "Shame", cost: 8, effect: "shame",  duration: 3, requires_target: true },
              // Add more starting skills if needed
              ],
         // Battle Sprite
@@ -34,9 +34,9 @@ function scr_BuildCharacterDB() {
         matk: 12, mdef: 6, spd: 6, luk: 7,
         // Starting Skills
         skills: [
-            { name: "Heal", cost: 5, effect: "heal_hp", requires_target: false, heal_amount: 25, power_stat: "matk" },
-            { name: "Zap", cost: 4, effect: "damage_enemy", requires_target: true, damage: 15, element: "lightning", power_stat: "matk" },
-            { name: "Bind",  cost: 6, effect: "bind",   duration: 3, requires_target: true }
+            //{ name: "Heal", cost: 5, effect: "heal_hp", requires_target: false, heal_amount: 25, power_stat: "matk" },
+            //{ name: "Zap", cost: 4, effect: "damage_enemy", requires_target: true, damage: 15, element: "lightning", power_stat: "matk" },
+            //{ name: "Bind",  cost: 6, effect: "bind",   duration: 3, requires_target: true }
              ],
         // Battle Sprite
         battle_sprite: spr_claude_battle // <<< Ensure this is the correct sprite asset name

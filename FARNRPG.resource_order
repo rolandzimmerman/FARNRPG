@@ -52,6 +52,7 @@
     {"name":"Drawing","order":1,"path":"scripts/Drawing/Drawing.yy",},
     {"name":"scr_AllEnemiesDefeated","order":6,"path":"scripts/scr_AllEnemiesDefeated/scr_AllEnemiesDefeated.yy",},
     {"name":"scr_BuildCharacterDB","order":12,"path":"scripts/scr_BuildCharacterDB/scr_BuildCharacterDB.yy",},
+    {"name":"scr_BuildSpellDB","order":15,"path":"scripts/scr_BuildSpellDB/scr_BuildSpellDB.yy",},
     {"name":"scr_CastSkill","order":5,"path":"scripts/scr_CastSkill/scr_CastSkill.yy",},
     {"name":"scr_FetchCharacterInfo","order":13,"path":"scripts/scr_FetchCharacterInfo/scr_FetchCharacterInfo.yy",},
     {"name":"scr_GetEnemyDataFromName","order":4,"path":"scripts/scr_GetEnemyDataFromName/scr_GetEnemyDataFromName.yy",},
