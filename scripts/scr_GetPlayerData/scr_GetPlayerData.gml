@@ -1,105 +1,128 @@
 /// @function scr_GetPlayerData(_char_key)
-/// @description Returns a battle-ready stat struct for a character, including learned spells.
-/// @param {string} _char_key
-
+/// @description Returns a battle struct for the character, with `equipment`.
 function scr_GetPlayerData(_char_key) {
-    var _base_data = scr_FetchCharacterInfo(_char_key);
-    if (is_undefined(_base_data)) {
+    var _base = scr_FetchCharacterInfo(_char_key);
+    if (is_undefined(_base)) {
+        // fallback empty
         return {
-            character_key: _char_key,
-            name: "(Unknown)",
-            hp: 0, maxhp: 0, mp: 0, maxmp: 0,
-            atk: 0, def: 0, matk: 0, mdef: 0,
-            spd: 0, luk: 0,
-            level: 1, xp: 0, xp_require: 0,
-            skills: [], skill_index: 0, item_index: 0,
-            is_defending: false, status: "none"
+            character_key:_char_key, name:"(Unknown)",
+            hp:0,   maxhp:0,
+            mp:0,   maxmp:0,
+            atk:0,  def:0,
+            matk:0, mdef:0,
+            spd:0,  luk:0,
+            level:1, xp:0, xp_require:0,
+            skills:[], skill_index:0, item_index:0,
+            equipment:{
+                weapon:noone, offhand:noone,
+                armor:noone,  helm:noone,
+                accessory:noone
+            },
+            is_defending:false,
+            status:"none",
+            battle_sprite:undefined
         };
     }
 
-    var _persistent = undefined;
-
+    // --- 1) persistent source (`obj_player` or your global map) ---
+    var _pers;
     if (_char_key == "hero" && instance_exists(obj_player)) {
-        _persistent = obj_player;
-    } else if (variable_global_exists("party_current_stats") && ds_exists(global.party_current_stats, ds_type_map)) {
+        _pers = obj_player;
+    } else {
+        if (!variable_global_exists("party_current_stats") 
+            || !ds_exists(global.party_current_stats, ds_type_map)) {
+            global.party_current_stats = ds_map_create();
+        }
         var saved = ds_map_find_value(global.party_current_stats, _char_key);
         if (is_struct(saved)) {
-            _persistent = saved;
+            _pers = saved;
         } else {
-            var xp_req = script_exists(scr_GetXPForLevel) ? scr_GetXPForLevel(2) : 100;
+            // initialize new
+            var xp_req = scr_GetXPForLevel(2);
+            var sk = [];
+            if (variable_struct_exists(_base, "skills") && is_array(_base.skills)) {
+                for (var i = 0; i < array_length(_base.skills); i++) {
+                    if (is_struct(_base.skills[i]))
+                        array_push(sk, struct_copy(_base.skills[i]));
+                }
+            }
             var new_stats = {
-                hp: _base_data.hp_total, hp_total: _base_data.hp_total,
-                mp: _base_data.mp_total, mp_total: _base_data.mp_total,
-                level: 1, xp: 0, xp_require: xp_req,
-                atk: _base_data.atk, def: _base_data.def,
-                matk: _base_data.matk, mdef: _base_data.mdef,
-                spd: _base_data.spd, luk: _base_data.luk
+                hp: _base.hp_total,   maxhp: _base.hp_total,
+                mp: _base.mp_total,   maxmp: _base.mp_total,
+                atk:_base.atk,        def:_base.def,
+                matk:_base.matk,      mdef:_base.mdef,
+                spd:_base.spd,        luk:_base.luk,
+                level:1, xp:0, xp_require: xp_req,
+                skills:sk,
+                equipment:{
+                    weapon:noone, offhand:noone,
+                    armor:noone,  helm:noone,
+                    accessory:noone
+                }
             };
             ds_map_add(global.party_current_stats, _char_key, new_stats);
-            _persistent = new_stats;
+            _pers = new_stats;
         }
-    } else {
-        _persistent = _base_data;
     }
 
+    // --- 2) build the output struct ---
     var d = {};
     d.character_key = _char_key;
-    d.name = _base_data.name;
-    d.hp = variable_struct_exists(_persistent, "hp") ? _persistent.hp : _base_data.hp_total;
-    d.maxhp = variable_struct_exists(_persistent, "hp_total") ? _persistent.hp_total : _base_data.hp_total;
-    d.mp = variable_struct_exists(_persistent, "mp") ? _persistent.mp : _base_data.mp_total;
-    d.maxmp = variable_struct_exists(_persistent, "mp_total") ? _persistent.mp_total : _base_data.mp_total;
-    d.atk = variable_struct_exists(_persistent, "atk") ? _persistent.atk : _base_data.atk;
-    d.def = variable_struct_exists(_persistent, "def") ? _persistent.def : _base_data.def;
-    d.matk = variable_struct_exists(_persistent, "matk") ? _persistent.matk : _base_data.matk;
-    d.mdef = variable_struct_exists(_persistent, "mdef") ? _persistent.mdef : _base_data.mdef;
-    d.spd = variable_struct_exists(_persistent, "spd") ? _persistent.spd : _base_data.spd;
-    d.luk = variable_struct_exists(_persistent, "luk") ? _persistent.luk : _base_data.luk;
-    d.level = variable_struct_exists(_persistent, "level") ? _persistent.level : 1;
-    d.xp = variable_struct_exists(_persistent, "xp") ? _persistent.xp : 0;
-    d.xp_require = variable_struct_exists(_persistent, "xp_require")
-        ? _persistent.xp_require
-        : (script_exists(scr_GetXPForLevel) ? scr_GetXPForLevel(d.level + 1) : 100);
+    d.name          = _base.name;
 
-    // --- Spell learning ---
-    var s = [];
-    var current_level = d.level;
+    d.hp    = variable_struct_exists(_pers,"hp")       ? _pers.hp      : _base.hp_total;
+    d.maxhp = variable_struct_exists(_pers,"maxhp")    ? _pers.maxhp   : _base.hp_total;
+    d.mp    = variable_struct_exists(_pers,"mp")       ? _pers.mp      : _base.mp_total;
+    d.maxmp = variable_struct_exists(_pers,"maxmp")    ? _pers.maxmp   : _base.mp_total;
 
-    if (
-        variable_global_exists("spell_db") &&
-        is_struct(global.spell_db) &&
-        variable_struct_exists(global.spell_db, "learning_schedule")
-    ) {
-        var sched_map = global.spell_db.learning_schedule;
+    d.atk   = variable_struct_exists(_pers,"atk")      ? _pers.atk     : _base.atk;
+    d.def   = variable_struct_exists(_pers,"def")      ? _pers.def     : _base.def;
+    d.matk  = variable_struct_exists(_pers,"matk")     ? _pers.matk    : _base.matk;
+    d.mdef  = variable_struct_exists(_pers,"mdef")     ? _pers.mdef    : _base.mdef;
+    d.spd   = variable_struct_exists(_pers,"spd")      ? _pers.spd     : _base.spd;
+    d.luk   = variable_struct_exists(_pers,"luk")      ? _pers.luk     : _base.luk;
 
-        if (ds_exists(sched_map, ds_type_map)) {
-            if (ds_map_exists(sched_map, _char_key)) {
-                var char_sched = ds_map_find_value(sched_map, _char_key);
+    d.level     = variable_struct_exists(_pers,"level")     ? _pers.level     : 1;
+    d.xp        = variable_struct_exists(_pers,"xp")        ? _pers.xp        : 0;
+    d.xp_require= variable_struct_exists(_pers,"xp_require")? _pers.xp_require: scr_GetXPForLevel(d.level+1);
 
-                if (ds_exists(char_sched, ds_type_map)) {
-                    for (var i = 1; i <= current_level; i++) {
-                        var lvl_key = string(i);
-                        if (ds_map_exists(char_sched, lvl_key)) {
-                            var spell_key = ds_map_find_value(char_sched, lvl_key);
-
-                            // ✅ Fixed line: Use variable_struct_get to access struct fields dynamically
-                            if (variable_struct_exists(global.spell_db, spell_key)) {
-                                array_push(s, variable_struct_get(global.spell_db, spell_key));
-                            }
-                        }
-                    }
+    // --- 3) learned skills (unchanged) ---
+    var s = [], cur = d.level;
+    if (variable_global_exists("spell_db") && is_struct(global.spell_db)
+     && ds_exists(global.spell_db.learning_schedule, ds_type_map)
+     && ds_map_exists(global.spell_db.learning_schedule, _char_key))
+    {
+        var sched = ds_map_find_value(global.spell_db.learning_schedule, _char_key);
+        if (ds_exists(sched, ds_type_map)) {
+            for (var L = 1; L <= cur; L++) {
+                var k = string(L);
+                if (ds_map_exists(sched, k)) {
+                    var skey = ds_map_find_value(sched, k);
+                    if (variable_struct_exists(global.spell_db, skey))
+                        array_push(s, struct_copy(variable_struct_get(global.spell_db, skey)));
                 }
             }
         }
     }
-
-    d.skills = s;
-    d.skill_index = 0;
+    d.skills     = s;
+    d.skill_index= 0;
     d.item_index = 0;
-    d.is_defending = false;
-    d.status = "none";
 
-    show_debug_message(" [GetPlayerData] " + _char_key + " HP " + string(d.hp) + "/" + string(d.maxhp) + " | Level " + string(d.level) + " | Skills: " + string(array_length(d.skills)));
+    // --- 4) equipment copy from persistent ---
+    if (variable_struct_exists(_pers,"equipment") && is_struct(_pers.equipment)) {
+        d.equipment = _pers.equipment;
+    } else {
+        d.equipment = {
+            weapon:noone, offhand:noone,
+            armor:noone,  helm:noone,
+            accessory:noone
+        };
+        if (_pers != _base) _pers.equipment = d.equipment;
+    }
+
+    d.is_defending = false;
+    d.status       = "none";
+    d.battle_sprite= _base.battle_sprite; // from your character DB
 
     return d;
 }

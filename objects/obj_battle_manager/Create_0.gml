@@ -63,7 +63,13 @@ if (variable_global_exists("party_members") && is_array(global.party_members)) {
         if (p_inst != noone) {
             p_inst.image_xscale = sc;
             p_inst.image_yscale = sc;
-            p_inst.data = scr_GetPlayerData(char_key);
+            var _base_stats = scr_GetPlayerData(char_key);
+if (is_struct(_base_stats)) {
+    p_inst.data = scr_CalculateEquippedStats(_base_stats);
+} else {
+    p_inst.data = _base_stats; // fallback to raw if something breaks
+}
+
 
             if (!is_struct(p_inst.data)) {
                 show_debug_message("    -> ⚠️ scr_GetPlayerData returned INVALID for " + string(char_key));

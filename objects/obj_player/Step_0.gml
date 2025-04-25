@@ -1,89 +1,149 @@
 /// obj_player :: Step Event
-// Handles overworld movement, animation, interaction, room transitions, and random encounters.
+/// Handles overworld movement, animation, interaction, room transitions, random encounters, and PAUSING.
 
-// Exit check
-if (room == rm_battle) exit;
-if (instance_exists(obj_dialog)) exit;
-if (instance_exists(obj_game_manager) && obj_game_manager.game_state == "paused") exit;
+// --- DEBUG LINE: Check if player step is running at the very beginning ---
+show_debug_message("Player Step START (Absolute Top Debug)");
 
-// Input Reading
-var key_x = keyboard_check(ord("D")) - keyboard_check(ord("A")); var key_y = keyboard_check(ord("S")) - keyboard_check(ord("W"));
-var joy_x = gamepad_axis_value(0, gp_axislh); var joy_y = gamepad_axis_value(0, gp_axislv); var deadzone = 0.25;
-if (abs(joy_x) < deadzone) joy_x = 0; if (abs(joy_y) < deadzone) joy_y = 0;
-var _hor = key_x != 0 ? key_x : sign(joy_x); var _ver = key_y != 0 ? key_y : sign(joy_y);
-
-// --- Logging Before Movement ---
-if ((_hor != 0 || _ver != 0) && instance_exists(id)) {
-     if (variable_instance_exists(id, "tilemap")) {
-         // --- CORRECTED CHECK: Only check for -1 ---
-         if (tilemap == -1) {
-              show_debug_message("   WARNING: 'tilemap' variable is -1 (invalid) before move_and_collide!");
-         } else {
-              // Optional: Log the valid ID being used
-              // show_debug_message("Player Step: Attempting move_and_collide using tilemap ID: " + string(tilemap));
-         }
-         // --- END CORRECTED CHECK ---
-     } else {
-         show_debug_message("   ERROR: 'tilemap' variable does not exist on obj_player instance!");
-     }
+// Safely get the game manager instance ID
+var _gm = noone;
+if (instance_exists(obj_game_manager)) {
+    _gm = obj_game_manager;
 }
 
-// Move & Collide
-if (variable_instance_exists(id, "tilemap") && tilemap != -1) { // Also check ID is valid
-    move_and_collide( _hor * move_speed, _ver * move_speed, tilemap, undefined, undefined, undefined, move_speed, move_speed );
-} else {
-    // Fallback movement if tilemap missing/invalid
-    x += _hor * move_speed;
-    y += _ver * move_speed;
-}
+// ONLY proceed with player logic if the game manager exists and is ready
+if (_gm != noone && variable_instance_exists(_gm, "game_state")) {
 
+    // --- Safe to access game_state now ---
+    show_debug_message("Player Step (After GM check). Instance ID: " + string(id) + " | Game State: " + string(_gm.game_state));
 
-// Animation Swap
-if (_hor != 0 || _ver != 0) { if (_ver > 0) sprite_index = spr_player_walk_down; else if (_ver < 0) sprite_index = spr_player_walk_up; else if (_hor > 0) sprite_index = spr_player_walk_right; else if (_hor < 0) sprite_index = spr_player_walk_left; } else { if (sprite_index == spr_player_walk_right) sprite_index = spr_player_idle_right; if (sprite_index == spr_player_walk_left) sprite_index = spr_player_idle_left; if (sprite_index == spr_player_walk_up) sprite_index = spr_player_idle_up; if (sprite_index == spr_player_walk_down) sprite_index = spr_player_idle_down; }
+    // Exit immediately if in battle or dialogue
+    if (room == rm_battle) exit;
+    if (instance_exists(obj_dialog)) exit;
 
-// === Room Transition Check ===
-var _exit_margin = 4; var _room_w = room_width; var _room_h = room_height;
-var _exit_direction = "none"; var _destination_room = noone;
-if (x <= _exit_margin) _exit_direction = "left"; else if (x >= _room_w - _exit_margin) _exit_direction = "right"; else if (y <= _exit_margin) _exit_direction = "above"; else if (y >= _room_h - _exit_margin) _exit_direction = "below";
-if (_exit_direction != "none") {
-    if (variable_global_exists("room_map") && ds_exists(global.room_map, ds_type_map)) {
-        var _current_room_connections = ds_map_find_value(global.room_map, room);
-        if (ds_exists(_current_room_connections, ds_type_map)) {
-            _destination_room = ds_map_find_value(_current_room_connections, _exit_direction);
-            if (!is_undefined(_destination_room) && room_exists(_destination_room)) {
-                global.entry_direction = _exit_direction; room_goto(_destination_room); exit;
-            } else { if (_exit_direction == "left") x = _exit_margin + 1; if (_exit_direction == "right") x = _room_w - _exit_margin - 1; if (_exit_direction == "above") y = _exit_margin + 1; if (_exit_direction == "below") y = _room_h - _exit_margin - 1; }
+    // Exit if paused
+    if (_gm.game_state == "paused") {
+        show_debug_message("Player Step: Exiting due to paused state.");
+        exit;
+    }
+
+    // --- PAUSE INPUT ---
+    if (keyboard_check_pressed(vk_escape) || gamepad_button_check_pressed(0, gp_start)) {
+        if (_gm.game_state == "playing") {
+            _gm.game_state = "paused";
+            show_debug_message("Game Paused (via Player)");
+
+            if (!instance_exists(obj_pause_menu)) {
+                var _pm = instance_create_layer(0, 0, "Instances", obj_pause_menu);
+                instance_deactivate_object(id);
+                instance_deactivate_object(obj_npc_parent);
+                instance_activate_object(_pm);
+            }
+            exit;
         }
     }
-}
-// === End Room Transition Check ===
 
+    // --- MOVEMENT INPUT ---
+    var key_x = keyboard_check(ord("D")) - keyboard_check(ord("A"));
+    var key_y = keyboard_check(ord("S")) - keyboard_check(ord("W"));
+    var joy_x = gamepad_axis_value(0, gp_axislh);
+    var joy_y = gamepad_axis_value(0, gp_axislv);
+    var deadzone = 0.25;
+    if (abs(joy_x) < deadzone) joy_x = 0;
+    if (abs(joy_y) < deadzone) joy_y = 0;
+    var _hor = key_x != 0 ? key_x : sign(joy_x);
+    var _ver = key_y != 0 ? key_y : sign(joy_y);
 
-// Interaction Check
-var _interact_target = instance_place(x, y, obj_npc_parent);
-if (instance_exists(_interact_target)) { if (_interact_target.can_talk) { var _pressed_interact = keyboard_check_pressed(vk_space) || gamepad_button_check_pressed(0, gp_face1); if (_pressed_interact) { with (_interact_target) { event_perform(ev_other, ev_user0); }}}}
+    // Optional logging
+    if ((_hor != 0 || _ver != 0) && variable_instance_exists(id, "tilemap")) {
+        if (tilemap == -1) {
+            // show_debug_message("WARNING: tilemap is -1 before move_and_collide!");
+        }
+    }
 
-// Encounter Timer Init & Increment
-if (!variable_global_exists("encounter_timer") || !is_real(global.encounter_timer)) { global.encounter_timer = 0; }
-if (_hor != 0 || _ver != 0) { if (is_real(global.encounter_timer)) { global.encounter_timer += 1; } else { global.encounter_timer = 1; }}
+    // Move & collide
+    if (variable_instance_exists(id, "tilemap") && tilemap != -1 && is_real(tilemap)) {
+        move_and_collide(_hor * move_speed, _ver * move_speed, tilemap);
+    } else {
+        x += _hor * move_speed;
+        y += _ver * move_speed;
+    }
 
-// Random Encounter Check
-var encounter_check_threshold = 120; var encounter_chance = 50;
-if (is_real(global.encounter_timer) && global.encounter_timer >= encounter_check_threshold) {
-    var roll = irandom_range(1, 100);
-    if (roll <= encounter_chance) {
-        global.encounter_timer = 0;
-        if (variable_global_exists("encounter_table") && ds_exists(global.encounter_table, ds_type_map)) {
-            var formation_list = ds_map_find_value(global.encounter_table, room);
-            if (ds_exists(formation_list, ds_type_list) && !ds_list_empty(formation_list)) {
-                var formation_index = irandom(ds_list_size(formation_list) - 1);
-                global.battle_formation = ds_list_find_value(formation_list, formation_index);
-                if (is_array(global.battle_formation)) {
-                     global.original_room = room; global.return_x = x; global.return_y = y;
-                     global.battle_end_triggered = false; global.battle_state = "player_input";
-                     if (room_exists(rm_battle)) { room_goto(rm_battle); exit; }
+    // Animation
+    if (_hor != 0 || _ver != 0) {
+        if (_ver > 0)      sprite_index = spr_player_walk_down;
+        else if (_ver < 0) sprite_index = spr_player_walk_up;
+        else if (_hor > 0) sprite_index = spr_player_walk_right;
+        else if (_hor < 0) sprite_index = spr_player_walk_left;
+    } else {
+        if (sprite_index == spr_player_walk_right) sprite_index = spr_player_idle_right;
+        if (sprite_index == spr_player_walk_left)  sprite_index = spr_player_idle_left;
+        if (sprite_index == spr_player_walk_up)    sprite_index = spr_player_idle_up;
+        if (sprite_index == spr_player_walk_down)  sprite_index = spr_player_idle_down;
+    }
+
+    // === Room Transitions ===
+    var _exit_margin = 4;
+    var _exit_dir = "none";
+    if (x <= _exit_margin)                 _exit_dir = "left";
+    else if (x >= room_width - _exit_margin)  _exit_dir = "right";
+    else if (y <= _exit_margin)             _exit_dir = "above";
+    else if (y >= room_height - _exit_margin) _exit_dir = "below";
+
+    if (_exit_dir != "none") {
+        if (variable_global_exists("room_map") && ds_exists(global.room_map, ds_type_map)) {
+            var conns = ds_map_find_value(global.room_map, room);
+            if (ds_exists(conns, ds_type_map)) {
+                var dest = ds_map_find_value(conns, _exit_dir);
+                if (room_exists(dest)) {
+                    global.entry_direction = _exit_dir;
+                    room_goto(dest);
+                    exit;
+                } else {
+                    // push back inside bounds
+                    if (_exit_dir == "left")      x = _exit_margin + 1;
+                    if (_exit_dir == "right")     x = room_width - _exit_margin - 1;
+                    if (_exit_dir == "above")     y = _exit_margin + 1;
+                    if (_exit_dir == "below")     y = room_height - _exit_margin - 1;
                 }
             }
         }
-    } else { global.encounter_timer = 0; }
+    }
+
+    // --- NPC Interaction ---
+    var _npc = instance_place(x, y, obj_npc_parent);
+    if (instance_exists(_npc) && _npc.can_talk) {
+        if (keyboard_check_pressed(vk_space) || gamepad_button_check_pressed(0, gp_face1)) {
+            with (_npc) event_perform(ev_other, ev_user0);
+        }
+    }
+
+    // --- Random Encounters ---
+    if (!variable_global_exists("encounter_timer") || !is_real(global.encounter_timer)) {
+        global.encounter_timer = 0;
+    }
+    if (_hor != 0 || _ver != 0) {
+        global.encounter_timer += 1;
+    }
+
+    if (global.encounter_timer >= 120) {
+        global.encounter_timer = 0;
+        if (irandom(99) < 50 && variable_global_exists("encounter_table") && ds_exists(global.encounter_table, ds_type_map)) {
+            var list = ds_map_find_value(global.encounter_table, room);
+            if (ds_exists(list, ds_type_list) && !ds_list_empty(list)) {
+                var idx = irandom(ds_list_size(list) - 1);
+                global.battle_formation = ds_list_find_value(list, idx);
+                global.original_room   = room;
+                global.return_x        = x;
+                global.return_y        = y;
+                if (room_exists(rm_battle)) {
+                    room_goto(rm_battle);
+                    exit;
+                }
+            }
+        }
+    }
+
+} else {
+    // Game manager missing or not ready
+    show_debug_message("Player Step: Waiting for Game Manager or correct state.");
 }

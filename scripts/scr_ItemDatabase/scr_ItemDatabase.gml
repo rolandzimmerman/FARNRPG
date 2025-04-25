@@ -1,72 +1,87 @@
 /// @function scr_ItemDatabase()
-/// @description Returns a DS Map containing definitions for all items in the game.
-/// Call this ONCE at game start (e.g., in obj_init) and store the result in a global variable.
+/// @description Returns a DS Map containing definitions for all items in the game,
+/// including equipment items with a `bonuses` struct for use in battle.
 function scr_ItemDatabase() {
-
     var _item_map = ds_map_create();
 
-    // --- Define Items Here ---
-    // Use unique string keys for each item
+    // ------------------------
+    // CONSUMABLE ITEMS
+    // ------------------------
 
-    // Example: Potion
     ds_map_add(_item_map, "potion", {
-        name: "Potion",
-        description: "Restores 50 HP.",
-        effect: "heal_hp", // Custom identifier for the effect
-        value: 50,         // Amount of HP to restore
-        target: "ally",    // Can target self or allies (currently just self)
+        name:             "Potion",
+        description:      "Restores 50 HP.",
+        effect:           "heal_hp",
+        value:            50,
+        target:           "ally",
         usable_in_battle: true,
-        usable_in_field: true,
-        sprite_index: spr_item_potion // <<< ADD a sprite for the item!
+        usable_in_field:  true,
+        sprite_index:     spr_item_potion
     });
 
-    // Example: Bomb
     ds_map_add(_item_map, "bomb", {
-        name: "Bomb",
-        description: "Deals 30 fire damage to one enemy.",
-        effect: "damage_enemy",
-        value: 30,
-        element: "fire", // Optional: element type
-        target: "enemy",
+        name:             "Bomb",
+        description:      "Deals 30 fire damage to one enemy.",
+        effect:           "damage_enemy",
+        value:            30,
+        element:          "fire",
+        target:           "enemy",
         usable_in_battle: true,
-        usable_in_field: false,
-        sprite_index: spr_item_bomb // <<< ADD a sprite for the item!
+        usable_in_field:  false,
+        sprite_index:     spr_item_bomb
     });
 
-    // Example: Antidote
     ds_map_add(_item_map, "antidote", {
-        name: "Antidote",
-        description: "Cures poison.",
-        effect: "cure_status",
-        value: "poison", // Status effect to cure
-        target: "ally",
+        name:             "Antidote",
+        description:      "Cures poison.",
+        effect:           "cure_status",
+        value:            "poison",
+        target:           "ally",
         usable_in_battle: true,
-        usable_in_field: true,
-        sprite_index: spr_item_antidote // <<< ADD a sprite for the item!
+        usable_in_field:  true,
+        sprite_index:     spr_item_antidote
     });
 
-    // --- Add more items as needed ---
+    // ------------------------
+    // EQUIPMENT ITEMS
+    // ------------------------
+    // All equipment now uses a `bonuses` sub-struct.
 
+    ds_map_add(_item_map, "bronze_sword", {
+        name:             "Bronze Sword",
+        description:      "A basic sword. +4 ATK.",
+        type:             "equipment",
+        equip_slot:       "weapon",
+        bonuses:          { atk:4, def:0, matk:0, mdef:0, spd:0, luk:0, hp_total:0, mp_total:0 },
+        usable_in_battle: false,
+        usable_in_field:  false,
+        sprite_index:     spr_equipment_generic
+    });
+
+    ds_map_add(_item_map, "leather_armor", {
+        name:             "Leather Armor",
+        description:      "Simple armor. +3 DEF.",
+        type:             "equipment",
+        equip_slot:       "armor",
+        bonuses:          { atk:0, def:3, matk:0, mdef:0, spd:0, luk:0, hp_total:0, mp_total:0 },
+        usable_in_battle: false,
+        usable_in_field:  false,
+        sprite_index:     spr_equipment_generic
+    });
+
+    ds_map_add(_item_map, "lucky_charm", {
+        name:             "Lucky Charm",
+        description:      "Increases LUK by 5.",
+        type:             "equipment",
+        equip_slot:       "accessory",
+        bonuses:          { atk:0, def:0, matk:0, mdef:0, spd:0, luk:5, hp_total:0, mp_total:0 },
+        usable_in_battle: false,
+        usable_in_field:  false,
+        sprite_index:     spr_equipment_generic
+    });
+
+    // …add more equipment as needed…
 
     show_debug_message("Item Database Initialized with " + string(ds_map_size(_item_map)) + " items.");
     return _item_map;
-}
-
-/// @function scr_GetItemData(_item_key)
-/// @description Safely retrieves the data struct for a given item key from the global database.
-/// @param {string} _item_key The unique key of the item (e.g., "potion").
-/// @returns {Struct} The item data struct, or undefined if not found.
-function scr_GetItemData(_item_key) {
-    if (!variable_global_exists("item_database") || !ds_exists(global.item_database, ds_type_map)) {
-        show_debug_message("ERROR: Global item database not initialized!");
-        return undefined;
-    }
-    var _data = ds_map_find_value(global.item_database, _item_key);
-    if (is_undefined(_data)) { // GMS uses undefined for missing map keys
-         show_debug_message("WARNING: Item key '" + string(_item_key) + "' not found in database.");
-         return undefined;
-    }
-    // Optional: Return a *copy* if you want to prevent accidental modification of the database entry
-    // return struct_clone(_data);
-    return _data;
 }
