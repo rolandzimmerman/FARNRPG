@@ -184,8 +184,8 @@ if (_gm != noone && variable_instance_exists(_gm, "game_state")) {
     }
 
     // Check for encounter after timer reaches threshold
-    var encounter_threshold = 180; // Steps needed for a check (adjust as needed)
-    var encounter_chance = 10; // Percent chance (0-100) per check
+    var encounter_threshold = 100; // Steps needed for a check (adjust as needed)
+    var encounter_chance = 25; // Percent chance (0-100) per check
     if (global.encounter_timer >= encounter_threshold) {
         global.encounter_timer = 0; // Reset timer after check
 

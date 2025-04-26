@@ -1,4 +1,5 @@
-/// obj_dialog :: Draw GUI
+/// obj_dialog :: Draw GUI Event
+/// Draws the dialog box using spr_box1 (engine 9-slice via ext), Font1, and white text.
 
 // Exit immediately if the current message index is invalid
 // This can happen briefly before the first message is processed
@@ -6,74 +7,79 @@ if (current_message < 0 || current_message >= array_length(messages)) {
     exit;
 }
 
-// Define drawing area
-var _dx = 0;
-var _dy = gui_h * 0.7;
-var _boxw = gui_w;
-var _boxh = gui_h - _dy;
-var _padding = 16; // Padding inside the box
+// --- Basic Setup ---
+var gui_w = display_get_gui_width();
+var gui_h = display_get_gui_height();
 
-// Draw background box (ensure spr_box exists)
-if (sprite_exists(spr_box)) {
-    draw_sprite_stretched(spr_box, 0, _dx, _dy, _boxw, _boxh);
+// --- Define drawing area ---
+// Position dialog box at bottom part of the screen
+var _boxh = gui_h * 0.3; // Height (e.g., 30% of GUI height)
+var _boxw = gui_w;       // Full width
+var _dx = 0;           // Start at left edge
+var _dy = gui_h - _boxh; // Position box at the bottom
+var _padding = 16;     // Padding inside the box
+
+// --- Set Font and Color for ALL text ---
+// vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
+if (font_exists(Font1)) {
+    draw_set_font(Font1);
 } else {
-    // Fallback if sprite missing
-    draw_set_color(c_black);
-    draw_set_alpha(0.8);
-    draw_rectangle(_dx, _dy, _dx + _boxw, _dy + _boxh, false);
-    draw_set_alpha(1.0);
+    draw_set_font(-1); // Use default if Font1 is missing
 }
-
-
-// Set text drawing properties
-_dx += _padding;
-_dy += _padding;
-if (font_exists(Font1)) draw_set_font(Font1); else draw_set_font(-1); // Use default if Font1 missing
+draw_set_color(c_white); // SET COLOR TO WHITE FOR ALL TEXT
+// ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 draw_set_valign(fa_top);
 draw_set_halign(fa_left);
 
-// --- Get Speaker Name and Color Safely ---
-var _name = messages[current_message].name;
-var _name_color = c_white; // Default color
-
-// Check if global struct exists and the name key is present
-if (variable_global_exists("char_colors") && is_struct(global.char_colors)) {
-    if (variable_struct_exists(global.char_colors, _name)) {
-        // Key exists, get the color
-        _name_color = global.char_colors[$ _name];
-        // Optional: Check if the retrieved value is actually a color number
-        if (!is_real(_name_color)) {
-             show_debug_message("⚠️ Dialog Draw: Color value for '" + _name + "' is not a number! Reverting to default.");
-            _name_color = c_white;
-        }
+// --- Draw background box using spr_box1 ---
+if (sprite_exists(spr_box1)) { // Check for the correct sprite name
+    var _spr_w = sprite_get_width(spr_box1);
+    var _spr_h = sprite_get_height(spr_box1);
+    if (_spr_w > 0 && _spr_h > 0) { // Prevent divide by zero
+        var _xscale = _boxw / _spr_w;
+        var _yscale = _boxh / _spr_h;
+        // Draw using ext (engine handles 9-slice if enabled on sprite)
+        draw_sprite_ext(spr_box1, 0, _dx, _dy, _xscale, _yscale, 0, c_white, 1.0); // Use white tint, full alpha
     } else {
-        // Name key doesn't exist in the struct
-        show_debug_message("⚠️ Dialog Draw: Name '" + _name + "' not found in global.char_colors. Using default color.");
-        _name_color = c_white; // Use default
+        // Fallback rectangle if sprite has no dimensions
+        show_debug_message("ERROR: spr_box1 has zero width/height in obj_dialog Draw GUI!");
+        draw_set_alpha(0.8); draw_set_color(c_black); draw_rectangle(_dx, _dy, _dx + _boxw, _dy + _boxh, false); draw_set_alpha(1.0);
     }
 } else {
-    // Global struct itself doesn't exist or isn't a struct
-    show_debug_message("⚠️ Dialog Draw: global.char_colors missing or not a struct. Using default color for name.");
-    _name_color = c_white; // Use default
+    // Fallback rectangle if sprite asset is missing
+    show_debug_message("WARNING: spr_box1 not found in obj_dialog Draw GUI!");
+    draw_set_alpha(0.8); draw_set_color(c_black); draw_rectangle(_dx, _dy, _dx + _boxw, _dy + _boxh, false); draw_set_alpha(1.0);
 }
 
-// --- Draw Name ---
-draw_set_color(_name_color); // Use the safely determined color
-draw_text(_dx, _dy, _name + ":"); // Add colon after name
-draw_set_color(c_white); // Reset color for message text
-
-
-// --- Draw Message Text ---
-var _message_y = _dy + string_height("W") + 8; // Position message below name (adjust spacing as needed)
+// --- Calculate text drawing position inside box ---
+var _text_x = _dx + _padding;
+var _text_y = _dy + _padding;
 var _text_width_limit = _boxw - (_padding * 2); // Max width for text wrapping
 
+// --- Get Speaker Name ---
+var _name = messages[current_message].name;
+
+// --- REMOVED Speaker Name Color Logic ---
+// var _name_color = c_white; ... logic checking global.char_colors ... REMOVED
+
+// --- Draw Name (Always White) ---
+// draw_set_color(_name_color); // REMOVED - Color already set to white
+draw_text(_text_x, _text_y, _name + ":"); // Add colon after name
+// draw_set_color(c_white); // REMOVED - Color is still white
+
+
+// --- Draw Message Text (Always White) ---
+var _message_y = _text_y + string_height_ext("W", -1, _text_width_limit) + 8; // Position message below name line (adjust spacing +8 as needed)
+
 // Use draw_text_ext for automatic wrapping
-// Ensure draw_message (updated in End Step) contains the currently visible text
-draw_text_ext(_dx, _message_y, draw_message, -1, _text_width_limit);
+// Ensure draw_message (likely updated in Step/End Step) contains the currently visible part of the text
+// Color is already set to white
+draw_text_ext(_text_x, _message_y, draw_message, -1, _text_width_limit);
 
 
 // --- Reset Draw Settings ---
 draw_set_font(-1);
-draw_set_color(c_white);
+// draw_set_color(c_white); // Color is already white
 draw_set_valign(fa_top);
 draw_set_halign(fa_left);
+draw_set_alpha(1.0); // Ensure alpha is reset if changed elsewhere

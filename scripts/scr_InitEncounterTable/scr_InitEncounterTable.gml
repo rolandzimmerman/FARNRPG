@@ -25,13 +25,13 @@ function scr_InitEncounterTable() {
     // === Room 1 Encounters ===
     var list_room1 = ds_list_create();
     ds_list_add(list_room1, [obj_enemy_goblin, obj_enemy_goblin]);
-    ds_list_add(list_room1, [obj_enemy_slime, obj_enemy_slime, obj_enemy_goblin]);
+    ds_list_add(list_room1, [obj_enemy_nut_thief, obj_enemy_nut_thief, obj_enemy_goblin]);
     ds_map_add_list(global.encounter_table, Room1, list_room1); // Using Room1 as key
     show_debug_message("  -> Added formations for Room: Room1");
 
     // === Room 2 Encounters ===
     var list_room2 = ds_list_create();
-    ds_list_add(list_room2, [obj_enemy_slime, obj_enemy_slime, obj_enemy_goblin]);
+    ds_list_add(list_room2, [obj_enemy_nut_thief, obj_enemy_nut_thief, obj_enemy_goblin]);
     ds_list_add(list_room2, [obj_enemy_goblin]);
     ds_map_add_list(global.encounter_table, Room2, list_room2); // Using Room2 as key
     show_debug_message("  -> Added formations for Room: Room2");
