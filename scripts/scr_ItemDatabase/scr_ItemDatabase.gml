@@ -16,7 +16,7 @@ function scr_ItemDatabase() {
         target:           "ally",
         usable_in_battle: true,
         usable_in_field:  true,
-        sprite_index:     spr_item_potion
+        sprite_index:     spr_item_food
     });
 
     ds_map_add(_item_map, "bomb", {
