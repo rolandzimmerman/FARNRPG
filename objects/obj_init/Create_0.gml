@@ -62,17 +62,32 @@ if (script_exists(scr_BuildSpellDB)) {
     global.spell_db = {};
 }
 
-// --- Party Current Stats Map ---
-show_debug_message("Initializing Party Current Stats...");
-if (variable_global_exists("party_current_stats") && ds_exists(global.party_current_stats, ds_type_map))
-    ds_map_destroy(global.party_current_stats);
-global.party_current_stats = ds_map_create();
-show_debug_message("   -> party_current_stats map created.");
-
 // --- Party Members List ---
 show_debug_message("Initializing Party Members List...");
-global.party_members = [];  // e.g. ["hero", "claude", …]
-show_debug_message("   -> party_members array created.");
+if (!variable_global_exists("party_members") || !is_array(global.party_members)) { // Prevent duplicates if init runs again
+    global.party_members = [];  // e.g. ["hero", "claude", …]
+    show_debug_message("  -> global.party_members array created.");
+} else {
+     show_debug_message("  -> global.party_members already exists.");
+}
+
+
+// --- SHARED PARTY INVENTORY ---  <<<< NEW SECTION
+show_debug_message("Initializing Shared Party Inventory...");
+if (!variable_global_exists("party_inventory") || !is_array(global.party_inventory)) { // Prevent re-init
+    global.party_inventory = [
+        { item_key: "potion", quantity: 5 }, // Start with some items
+        { item_key: "bomb", quantity: 3 },
+        { item_key: "antidote", quantity: 2 },
+        { item_key: "bronze_sword", quantity: 1 },
+        { item_key: "leather_armor", quantity: 1 }, // Added example armor
+        { item_key: "lucky_charm", quantity: 1 }
+    ];
+     show_debug_message("  -> global.party_inventory created with starting items: " + string(global.party_inventory));
+} else {
+      show_debug_message("  -> global.party_inventory already exists.");
+}
+// --- END SHARED PARTY INVENTORY ---
 
 // --- Miscellaneous ---
 global.entry_direction = "none";
@@ -81,3 +96,6 @@ randomise();
 show_debug_message("========================================");
 show_debug_message("GAME INITIALIZATION COMPLETE");
 show_debug_message("========================================");
+
+// (Make sure obj_init runs *before* obj_player is created, typically by room order or creation code)
+
