@@ -92,6 +92,7 @@
     {"id":{"name":"scr_CalculateStatDifference","path":"scripts/scr_CalculateStatDifference/scr_CalculateStatDifference.yy",},},
     {"id":{"name":"scr_CastSkill","path":"scripts/scr_CastSkill/scr_CastSkill.yy",},},
     {"id":{"name":"scr_dialogue","path":"scripts/scr_dialogue/scr_dialogue.yy",},},
+    {"id":{"name":"scr_draw_sprite_nine_slice_manual","path":"scripts/scr_draw_sprite_nine_slice_manual/scr_draw_sprite_nine_slice_manual.yy",},},
     {"id":{"name":"scr_FetchCharacterInfo","path":"scripts/scr_FetchCharacterInfo/scr_FetchCharacterInfo.yy",},},
     {"id":{"name":"scr_GetEnemyDataFromName","path":"scripts/scr_GetEnemyDataFromName/scr_GetEnemyDataFromName.yy",},},
     {"id":{"name":"scr_GetItemData","path":"scripts/scr_GetItemData/scr_GetItemData.yy",},},
