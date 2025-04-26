@@ -81,6 +81,9 @@ if (!variable_global_exists("party_inventory") || !is_array(global.party_invento
         { item_key: "antidote", quantity: 2 },
         { item_key: "bronze_sword", quantity: 1 },
         { item_key: "leather_armor", quantity: 1 }, // Added example armor
+        {item_key: "wooden_staff", quantity: 1 },
+        { item_key: "iron_dagger", quantity: 1 },
+        {item_key: "thief_gloves", quantity: 1 },
         { item_key: "lucky_charm", quantity: 1 }
     ];
      show_debug_message("  -> global.party_inventory created with starting items: " + string(global.party_inventory));
