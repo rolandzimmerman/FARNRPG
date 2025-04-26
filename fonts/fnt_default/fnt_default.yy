@@ -9,7 +9,7 @@
   "canGenerateBitmap":true,
   "charset":0,
   "first":0,
-  "fontName":"Arial",
+  "fontName":"Times New Roman",
   "glyphOperations":0,
   "glyphs":{
     "32":{"character":32,"h":18,"offset":0,"shift":4,"w":4,"x":2,"y":2,},
@@ -206,7 +206,10 @@
   "sdfSpread":8,
   "size":12.0,
   "styleName":"Regular",
-  "textureGroupId":null,
+  "textureGroupId":{
+    "name":"Default",
+    "path":"texturegroups/Default",
+  },
   "TTFName":"",
   "usesSDF":false,
 }
