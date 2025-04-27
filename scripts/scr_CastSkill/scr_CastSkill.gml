@@ -1,53 +1,143 @@
 /// @function scr_CastSkill(user, skill, target)
-/// @description Executes skill, spends MP, applies effects using status scripts, returns true if turn used.
-/// @param {Instance} user The battle instance casting the skill.
-/// @param {Struct}   skill The skill data struct.
-/// @param {Instance} target The battle instance target (or user if self-target).
-
+/// @description Executes a skill: spends MP, applies heal/damage/status, and returns true if turn is consumed.
+/// @param {Instance} user   The battle instance casting the skill.
+/// @param {Struct}   skill  The skill data struct (must contain `effect`, `cost`, etc.).
+/// @param {Instance} target The battle instance being targeted (or same as user if self-target).
+/// @returns {Bool} True if the action was consumed (even on a “miss”), false if it failed outright.
 function scr_CastSkill(user, skill, target) {
-    // 1) Validate Inputs
-    if (!instance_exists(user) || !variable_instance_exists(user, "data") || !is_struct(user.data)) { return false; }
-    if (!is_struct(skill) || !variable_struct_exists(skill, "effect")) { return false; }
-    var needs_target = variable_struct_exists(skill, "requires_target") ? skill.requires_target : true;
-    var final_target_inst = needs_target ? target : user;
-    if (!instance_exists(final_target_inst)) { return false; }
-    var target_has_data = (variable_instance_exists(final_target_inst, "data") && is_struct(final_target_inst.data));
-    var ud = user.data; var td = target_has_data ? final_target_inst.data : noone;
+    // 1) Validate
+    if (!instance_exists(user) || !variable_instance_exists(user, "data") || !is_struct(user.data)) return false;
+    if (!is_struct(skill) || !variable_struct_exists(skill, "effect")) return false;
+    var needsTarget = variable_struct_exists(skill, "requires_target") ? skill.requires_target : true;
+    var finalTarget = needsTarget ? target : user;
+    if (!instance_exists(finalTarget)) return false;
 
-    // 2) Check User Status (using scr_GetStatus)
-    var user_status_info = script_exists(scr_GetStatus) ? scr_GetStatus(user) : undefined; if (is_struct(user_status_info)) { if (user_status_info.effect == "shame") { /* Popup */ return true; } if (user_status_info.effect == "bind" && irandom(99) < 50) { /* Popup */ return true; } }
+    var ud = user.data;
+    var td = (variable_instance_exists(finalTarget, "data") && is_struct(finalTarget.data))
+           ? finalTarget.data : noone;
 
-    // 3) Check & Deduct MP Cost
-    var cost = variable_struct_exists(skill, "cost") ? skill.cost : 0; var current_mp = variable_struct_exists(ud, "mp") ? ud.mp : 0;
-    show_debug_message(" -> CastSkill: Check MP for '" + string(skill.name) + "'. Cost=" + string(cost) + ", User MP Before=" + string(current_mp));
-    if (current_mp < cost) { show_debug_message(" -> CastSkill: Not enough MP! Action fails."); return false; }
-    if (variable_struct_exists(ud, "mp")) { ud.mp -= cost; show_debug_message(" -> CastSkill: MP Deducted. New MP=" + string(ud.mp)); }
-
-    // 4) Perform effect
-    var applied = false; var show_popup = true; var popup_text = ""; var popup_color = c_white; var missed_due_to_blind = false;
-    if (needs_target && target != user && is_struct(user_status_info) && user_status_info.effect == "blind" && irandom(99) < 50) { missed_due_to_blind = true; popup_text = "Miss!"; applied = true; show_popup = true; }
-
-    if (!missed_due_to_blind) {
-        switch (skill.effect) {
-            case "heal_hp": if (is_struct(td)) { /* Healing Logic */ applied = true; /* ... */ } else { applied = false; show_popup = false; } break;
-            case "damage_enemy": if (is_struct(td)) { /* Damage Logic */ applied = true; /* ... */ } else { applied = true; show_popup = false; } break;
-            case "blind": case "bind": case "shame": // Add other status keys
-                show_debug_message(" -> CastSkill: Applying status '" + skill.effect + "' to target " + string(final_target_inst));
-                var duration = variable_struct_exists(skill, "duration") ? skill.duration : 3;
-                if (script_exists(scr_ApplyStatus)) {
-                     scr_ApplyStatus(final_target_inst, skill.effect, duration);
-                     var _eff_str = skill.effect; var _f = string_upper(string_char_at(_eff_str, 1)); var _r = string_copy(_eff_str, 2, string_length(_eff_str) - 1); popup_text = _f + _r + "!";
-                     popup_color = c_fuchsia;
-                     applied = true; // <<< ENSURE THIS IS TRUE
-                } else { applied = false; show_popup = false; }
-                break;
-            default: show_debug_message("⚠️ Unknown skill effect: " + string(skill.effect)); applied = true; show_popup = false; break;
+    // 2) Status check
+    var status = script_exists(scr_GetStatus) ? scr_GetStatus(user) : undefined;
+    if (is_struct(status)) {
+        if (status.effect == "shame") {
+            show_debug_message(" -> CastSkill: 'shame' prevents action."); 
+            return true;
         }
-    } else { applied = true; } // Miss still uses turn
+        if (status.effect == "bind" && irandom(99) < 50) {
+            show_debug_message(" -> CastSkill: bound, action skipped."); 
+            return true;
+        }
+    }
 
-    // 5) Create Popup Text
-    if (show_popup && popup_text != "" && object_exists(obj_popup_damage) && instance_exists(final_target_inst)) { /* Create popup */ }
+    // 3) MP cost
+    var cost = variable_struct_exists(skill, "cost") ? skill.cost : 0;
+    var currentMP = variable_struct_exists(ud, "mp") ? ud.mp : 0;
+    show_debug_message(" -> CastSkill: Checking MP for '" + string(skill.name) + "'. Cost=" 
+                     + string(cost) + ", Have=" + string(currentMP));
+    if (currentMP < cost) {
+        show_debug_message(" -> CastSkill: Not enough MP!"); 
+        return false;
+    }
+    ud.mp -= cost;
+    show_debug_message(" -> CastSkill: MP after deduction: " + string(ud.mp));
 
-    show_debug_message(" -> CastSkill: Returning applied = " + string(applied));
+    // 4) Execute effect
+    var applied    = false;
+    var showPopup  = true;
+    var popupText  = "";
+    var popupColor = c_white;
+    var missedByBlind = false;
+
+    if (needsTarget && target != user && is_struct(status) 
+     && status.effect == "blind" && irandom(99) < 50) {
+        missedByBlind = true;
+        popupText     = "Miss!";
+        applied       = true;
+    }
+
+    if (!missedByBlind) {
+        switch (skill.effect) {
+            case "heal_hp":
+                if (is_struct(td)
+                 && variable_struct_exists(td, "hp")
+                 && variable_struct_exists(td, "maxhp")) {
+
+                    var baseHeal  = variable_struct_exists(skill, "heal_amount") ? skill.heal_amount : 0;
+                    var powerStat = variable_struct_exists(skill, "power_stat")   ? skill.power_stat   : "matk";
+                    var userPower = variable_struct_exists(ud, powerStat)
+                                  ? variable_struct_get(ud, powerStat)
+                                  : 0;
+
+                    var totalHeal = floor(baseHeal + userPower * 0.5);
+                    var beforeHP  = td.hp;
+                    td.hp         = min(td.maxhp, td.hp + totalHeal);
+
+                    var actual = td.hp - beforeHP;
+                    if (actual > 0) {
+                        popupText  = "+" + string(actual);
+                        popupColor = c_lime;
+                    } else {
+                        showPopup = false;
+                    }
+                    applied = true;
+                }
+                break;
+
+            case "damage_enemy":
+                if (is_struct(td) && variable_struct_exists(td, "hp")) {
+
+                    var baseDmg   = variable_struct_exists(skill, "damage")     ? skill.damage : 0;
+                    var powerStat = variable_struct_exists(skill, "power_stat") ? skill.power_stat : "atk";
+                    var atkPower  = variable_struct_exists(ud, powerStat)
+                                  ? variable_struct_get(ud, powerStat)
+                                  : 0;
+                    var defStat   = (powerStat == "matk") ? "mdef" : "def";
+                    var tgtDef    = variable_struct_exists(td, defStat)
+                                  ? variable_struct_get(td, defStat)
+                                  : 0;
+
+                    var dmg = max(1, baseDmg + atkPower - tgtDef);
+                    if (variable_struct_exists(td, "is_defending") && td.is_defending) {
+                        dmg = max(1, floor(dmg / 2));
+                    }
+                    td.hp -= dmg;
+                    popupText  = string(dmg);
+                    popupColor = c_white;
+                    applied    = true;
+                }
+                break;
+
+            case "blind":
+            case "bind":
+            case "shame":
+                var dur = variable_struct_exists(skill, "duration") ? skill.duration : 3;
+                if (script_exists(scr_ApplyStatus)) {
+                    scr_ApplyStatus(finalTarget, skill.effect, dur);
+                    var eff = string_upper(string_char_at(skill.effect, 1))
+                            + string_copy(skill.effect, 2, string_length(skill.effect)-1);
+                    popupText  = eff + "!";
+                    popupColor = c_fuchsia;
+                    applied    = true;
+                }
+                break;
+
+            default:
+                show_debug_message("⚠️ CastSkill: Unknown effect '" + string(skill.effect) + "'");
+                applied   = true;
+                showPopup = false;
+                break;
+        }
+    }
+
+    // 5) Popup
+    if (showPopup && popupText != "" && object_exists(obj_popup_damage) && instance_exists(finalTarget)) {
+        var pop = instance_create_layer(finalTarget.x, finalTarget.y-64, "Instances", obj_popup_damage);
+        if (pop != noone) {
+            pop.damage_amount = popupText;
+            pop.text_color    = popupColor;
+        }
+    }
+
+    show_debug_message(" -> CastSkill: applied=" + string(applied));
     return applied;
 }
