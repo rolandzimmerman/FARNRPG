@@ -1,16 +1,8 @@
 /// obj_battle_player :: Create Event
-// Initializes battle player state. Status effects are now handled globally.
+/// (Make sure you have this so each battle actor gets its “data” struct on creation.)
+//
+// You probably already have this in your object. If not, it looks roughly like:
+//
+persistent = false;  // battle‐only instance, not the overworld player
 
-show_debug_message("--- obj_battle_player Create Start (Instance: " + string(id) + ") ---");
-
-// Initialize 'data' struct - holds persistent/calculated stats
-data = {};
-
-// status_effect   = "none"; // REMOVED Instance Variable
-// status_duration = 0;      // REMOVED Instance Variable
-
-// Flag for sprite assignment
-sprite_assigned = false;
-
-// List for usable items (populated by Step event)
-battle_usable_items = [];
+// no other code here—data is assigned by the Battle Manager in its Create event

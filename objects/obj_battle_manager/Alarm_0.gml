@@ -13,7 +13,7 @@ switch (global.battle_state) {
         break;
 
 
-    // --- Victory: award XP, show dialogue, then save XP/Level immediately ---
+    // --- Victory: award XP, show dialogue, then schedule return ---
     case "victory":
     {
         show_debug_message("🏆 Alarm 0: Processing Victory. Total XP Accumulated: " + string(total_xp_from_battle));
@@ -28,7 +28,7 @@ switch (global.battle_state) {
                 var key = inst.data.character_key;
                 var didLevel = scr_AddXPToCharacter(key, total_xp_from_battle);
                 if (didLevel) array_push(leveled_up_characters, inst.data.name);
-                // Reflect new level & XP back onto the instance for UI/debug
+                // Reflect new level & XP back onto the instance
                 var pers = ds_map_find_value(global.party_current_stats, key);
                 if (is_struct(pers)) {
                     inst.data.level      = pers.level;
@@ -68,7 +68,7 @@ switch (global.battle_state) {
     break;
 
 
-    // --- Defeat: show dialogue, then return ---
+    // --- Defeat: show dialogue, then schedule return ---
     case "defeat":
     {
         show_debug_message("😭 Alarm 0: Processing Defeat.");
@@ -83,34 +83,55 @@ switch (global.battle_state) {
     break;
 
 
-    // --- Return to field: save only HP/MP, then cleanup & go back ---
+    // --- Return to field: save HP/MP/Overdrive, then cleanup & go back ---
     case "return_to_field":
     {
         show_debug_message("    Alarm 0: Returning to field map.");
-        show_debug_message("    Saving persistent party stats (HP, MP)...");
+        show_debug_message("    Saving persistent party stats (HP, MP, Overdrive)...");
 
         if (ds_exists(global.battle_party, ds_type_list) && ds_exists(global.party_current_stats, ds_type_map)) {
             var count = ds_list_size(global.battle_party);
             for (var i = 0; i < count; i++) {
                 var inst = global.battle_party[| i];
                 if (!instance_exists(inst) || !variable_instance_exists(inst, "data") || !is_struct(inst.data)) continue;
-                var key = inst.data.character_key;
+                var data = inst.data;
+                var key  = data.character_key;
                 if (!is_string(key) || !ds_map_exists(global.party_current_stats, key)) continue;
                 var pers = ds_map_find_value(global.party_current_stats, key);
-                show_debug_message("        -> Before Save [" + key + "]: HP=" + string(pers.hp) + ", MP=" + string(pers.mp));
-                pers.hp = max(1, inst.data.hp);
-                pers.mp = inst.data.mp;
+
+                show_debug_message("        -> Before Save [" + key + "]: HP=" + string(pers.hp) +
+                                  ", MP=" + string(pers.mp) +
+                                  ", OD=" + string(pers.overdrive));
+
+                // Update persistent map
+                pers.hp          = max(1, data.hp);
+                pers.mp          = data.mp;
+                pers.overdrive   = data.overdrive;
+                // pers.overdrive_max remains unchanged
+
                 ds_map_replace(global.party_current_stats, key, pers);
-                show_debug_message("        -> After Save  [" + key + "]: HP=" + string(pers.hp) + ", MP=" + string(pers.mp));
+
+                show_debug_message("        -> After Save  [" + key + "]: HP=" + string(pers.hp) +
+                                  ", MP=" + string(pers.mp) +
+                                  ", OD=" + string(pers.overdrive));
             }
         } else {
             show_debug_message("    -> ERROR: Cannot save stats (missing DS structures).");
         }
 
         // Cleanup battle data structures
-        if (ds_exists(global.battle_enemies, ds_type_list)) { ds_list_destroy(global.battle_enemies); global.battle_enemies = -1; }
-        if (ds_exists(global.battle_party,   ds_type_list)) { ds_list_destroy(global.battle_party);   global.battle_party   = -1; }
-        if (ds_exists(global.battle_status_effects, ds_type_map)) { ds_map_destroy(global.battle_status_effects); global.battle_status_effects = -1; }
+        if (ds_exists(global.battle_enemies, ds_type_list)) {
+            ds_list_destroy(global.battle_enemies);
+            global.battle_enemies = -1;
+        }
+        if (ds_exists(global.battle_party, ds_type_list)) {
+            ds_list_destroy(global.battle_party);
+            global.battle_party = -1;
+        }
+        if (ds_exists(global.battle_status_effects, ds_type_map)) {
+            ds_map_destroy(global.battle_status_effects);
+            global.battle_status_effects = -1;
+        }
 
         total_xp_from_battle             = 0;
         global.battle_state              = undefined;

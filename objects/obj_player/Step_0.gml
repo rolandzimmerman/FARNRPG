@@ -170,7 +170,35 @@ if (_gm != noone && variable_instance_exists(_gm, "game_state")) {
             // _gm.game_state = "dialogue"; // If interaction always pauses player
         }
     }
+// === Room Transitions ===
+var exit_margin = 4;
+var exit_dir    = "none";
+if (x <= exit_margin)                    exit_dir = "left";
+else if (x >= room_width - exit_margin)  exit_dir = "right";
+else if (y <= exit_margin)               exit_dir = "above";
+else if (y >= room_height - exit_margin) exit_dir = "below";
 
+if (exit_dir != "none") {
+    if (variable_global_exists("room_map") && ds_exists(global.room_map, ds_type_map)) {
+        var connMap = ds_map_find_value(global.room_map, room);
+        if (ds_exists(connMap, ds_type_map) && ds_map_exists(connMap, exit_dir)) {
+            var dest = ds_map_find_value(connMap, exit_dir);
+            if (room_exists(dest)) {
+                show_debug_message("Leaving " + room_get_name(room) + " → " + room_get_name(dest) + " via " + exit_dir);
+                global.entry_direction = exit_dir;
+                global.return_x = x;
+                global.return_y = y;
+                room_goto(dest);
+                exit; // end this Step
+            }
+        }
+    }
+    // No valid exit—push back inside bounds
+    if (exit_dir == "left")   x = exit_margin + 1;
+    if (exit_dir == "right")  x = room_width - exit_margin - 1;
+    if (exit_dir == "above")  y = exit_margin + 1;
+    if (exit_dir == "below")  y = room_height - exit_margin - 1;
+}
     // --- Random Encounters ---
     // Initialize timer if it doesn't exist
     if (!variable_global_exists("encounter_timer")) {
