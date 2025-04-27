@@ -1,8 +1,7 @@
 /// obj_battle_player :: Create Event
-/// (Make sure you have this so each battle actor gets its “data” struct on creation.)
-//
-// You probably already have this in your object. If not, it looks roughly like:
-//
-persistent = false;  // battle‐only instance, not the overworld player
+/// Initializes persistence and sprite assignment flag.
 
-// no other code here—data is assigned by the Battle Manager in its Create event
+persistent = true;            // keep the player alive across rooms
+sprite_assigned = false;      // **NEW** mark that we haven’t set the battle sprite yet
+
+// (…any other existing Create logic you already have…)
