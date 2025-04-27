@@ -9,54 +9,122 @@ function scr_GetXPForLevel(_level) {
 
 
 /// @function scr_AddXPToCharacter(_char_key, _xp_gain)
-/// @description Adds XP, handles level ups, updates persistent stats in map. Status is NOT handled here.
+/// @description Adds XP, handles level ups, updates persistent stats in map.
 /// @param {String} _char_key Character key.
-/// @param {Real} _xp_gain XP gained.
+/// @param {Real}   _xp_gain  XP gained.
 /// @returns {Bool} True if level up occurred.
 function scr_AddXPToCharacter(_char_key, _xp_gain) {
     show_debug_message("[AddXP] Adding " + string(_xp_gain) + " XP to character: " + _char_key);
-    if (!variable_global_exists("party_current_stats") || !ds_exists(global.party_current_stats, ds_type_map)) { return false; }
-    var _persistent_stats = ds_map_find_value(global.party_current_stats, _char_key);
-    if (!is_struct(_persistent_stats)) { return false; }
-    var _base_data = scr_FetchCharacterInfo(_char_key);
-    if (!is_struct(_base_data)) { return false; }
-    // Ensure necessary fields exist
-    if (!variable_struct_exists(_persistent_stats, "level")) _persistent_stats.level = 1;
-    if (!variable_struct_exists(_persistent_stats, "xp")) _persistent_stats.xp = 0;
-    if (!variable_struct_exists(_persistent_stats, "xp_require")) _persistent_stats.xp_require = scr_GetXPForLevel(_persistent_stats.level + 1);
-    if (!variable_struct_exists(_persistent_stats, "hp_total")) _persistent_stats.hp_total = _base_data.hp_total ?? 1;
-    if (!variable_struct_exists(_persistent_stats, "mp_total")) _persistent_stats.mp_total = _base_data.mp_total ?? 0;
-    if (!variable_struct_exists(_persistent_stats, "atk"))    _persistent_stats.atk = _base_data.atk ?? 1;
-    if (!variable_struct_exists(_persistent_stats, "def"))    _persistent_stats.def = _base_data.def ?? 1;
-    if (!variable_struct_exists(_persistent_stats, "matk"))   _persistent_stats.matk = _base_data.matk ?? 1;
-    if (!variable_struct_exists(_persistent_stats, "mdef"))   _persistent_stats.mdef = _base_data.mdef ?? 1;
-    if (!variable_struct_exists(_persistent_stats, "spd"))    _persistent_stats.spd = _base_data.spd ?? 1;
-    if (!variable_struct_exists(_persistent_stats, "luk"))    _persistent_stats.luk = _base_data.luk ?? 1;
-    if (!variable_struct_exists(_persistent_stats, "hp"))     _persistent_stats.hp = _persistent_stats.hp_total;
-    if (!variable_struct_exists(_persistent_stats, "mp"))     _persistent_stats.mp = _persistent_stats.mp_total;
-    if (!variable_struct_exists(_persistent_stats, "skills") || !is_array(_persistent_stats.skills)) { _persistent_stats.skills = []; }
 
-    // Add XP
-    _persistent_stats.xp += _xp_gain;
-    show_debug_message("  [AddXP] " + _char_key + " XP after gain: " + string(_persistent_stats.xp) + " / " + string(_persistent_stats.xp_require));
+    // 1) Validate map
+    if (!variable_global_exists("party_current_stats")
+     || !ds_exists(global.party_current_stats, ds_type_map)) {
+        show_debug_message("  [AddXP] ERROR: party_current_stats map missing");
+        return false;
+    }
 
-    // Check for Level Up
-    var leveled_up_this_time = false;
-    while (_persistent_stats.xp_require > 0 && _persistent_stats.xp >= _persistent_stats.xp_require) {
-        leveled_up_this_time = true;
-        _persistent_stats.level++; var _leveled_up_to = _persistent_stats.level;
-        show_debug_message("  >>> LEVEL UP! " + _char_key + " reached Level " + string(_leveled_up_to) + " <<<");
-        // Apply Stat Increases...
-        var hp_increase = 5 + irandom(2); var mp_increase = 2 + irandom(1); var atk_increase=1; var def_increase=1; var matk_increase=1; var mdef_increase=1; var spd_increase=(irandom(3)==0)?1:0; var luk_increase=(irandom(4)==0)?1:0;
-        _persistent_stats.hp_total += hp_increase; _persistent_stats.mp_total += mp_increase; _persistent_stats.atk += atk_increase; _persistent_stats.def += def_increase; _persistent_stats.matk += matk_increase; _persistent_stats.mdef += mdef_increase; _persistent_stats.spd += spd_increase; _persistent_stats.luk += luk_increase;
-        // Restore HP/MP...
-        _persistent_stats.hp = _persistent_stats.hp_total; _persistent_stats.mp = _persistent_stats.mp_total;
-        // Learn New Spells...
-        if (variable_global_exists("spell_db") && /* check map */ ds_map_exists(global.spell_db.learning_schedule, _char_key)) { var _sched = ds_map_find_value(global.spell_db.learning_schedule, _char_key); if(ds_exists(_sched, ds_type_map)) { var _lvl_str=string(_leveled_up_to); if(ds_map_exists(_sched, _lvl_str)){ var _key=ds_map_find_value(_sched, _lvl_str); if(variable_struct_exists(global.spell_db, _key)){ var _spell=global.spell_db[$ _key]; var _known=false; for(var j=0;j<array_length(_persistent_stats.skills);j++){if(is_struct(_persistent_stats.skills[j]) && _persistent_stats.skills[j].name == _spell.name){_known=true;break;}} if(!_known){array_push(_persistent_stats.skills, struct_copy(_spell)); show_debug_message("    >>> " + _char_key + " learned '" + _spell.name + "'! <<<");} } } } }
-        // Calculate Next XP Req...
-        _persistent_stats.xp_require = scr_GetXPForLevel(_leveled_up_to + 1);
-        show_debug_message("  [AddXP] New XP Requirement: " + string(_persistent_stats.xp_require));
-    } // End while loop
-    show_debug_message("  [AddXP] Finished. Final Level: " + string(_persistent_stats.level) + ", XP: " + string(_persistent_stats.xp) + "/" + string(_persistent_stats.xp_require));
-    return leveled_up_this_time;
+    // 2) Fetch & validate struct directly from map
+    var charStats = ds_map_find_value(global.party_current_stats, _char_key);
+    if (!is_struct(charStats)) {
+        show_debug_message("  [AddXP] ERROR: No struct for key: " + _char_key);
+        return false;
+    }
+
+    // 3) Fetch base data for defaults
+    var base = scr_FetchCharacterInfo(_char_key);
+    if (!is_struct(base)) {
+        show_debug_message("  [AddXP] ERROR: scr_FetchCharacterInfo failed for: " + _char_key);
+        return false;
+    }
+
+    // 4) Ensure necessary fields exist
+    if (!variable_struct_exists(charStats, "level"))      charStats.level      = 1;
+    if (!variable_struct_exists(charStats, "xp"))         charStats.xp         = 0;
+    if (!variable_struct_exists(charStats, "xp_require")) charStats.xp_require = scr_GetXPForLevel(charStats.level + 1);
+
+    // Use maxhp/maxmp instead of hp_total/mp_total
+    if (!variable_struct_exists(charStats, "maxhp")) charStats.maxhp = base.hp_total  ?? 1;
+    if (!variable_struct_exists(charStats, "hp"))    charStats.hp    = charStats.maxhp;
+    if (!variable_struct_exists(charStats, "maxmp")) charStats.maxmp = base.mp_total ?? 0;
+    if (!variable_struct_exists(charStats, "mp"))    charStats.mp    = charStats.maxmp;
+
+    // Other stats
+    if (!variable_struct_exists(charStats, "atk"))  charStats.atk  = base.atk  ?? 1;
+    if (!variable_struct_exists(charStats, "def"))  charStats.def  = base.def  ?? 1;
+    if (!variable_struct_exists(charStats, "matk")) charStats.matk = base.matk ?? 1;
+    if (!variable_struct_exists(charStats, "mdef")) charStats.mdef = base.mdef ?? 1;
+    if (!variable_struct_exists(charStats, "spd"))  charStats.spd  = base.spd  ?? 1;
+    if (!variable_struct_exists(charStats, "luk"))  charStats.luk  = base.luk  ?? 1;
+
+    if (!variable_struct_exists(charStats, "skills") || !is_array(charStats.skills)) {
+        charStats.skills = [];
+    }
+
+    // 5) Add the XP
+    charStats.xp += _xp_gain;
+    show_debug_message("  [AddXP] After gain: XP=" + string(charStats.xp) + "/" + string(charStats.xp_require));
+
+    // 6) Handle level‐ups
+    var leveled_up = false;
+    while (charStats.xp_require > 0 && charStats.xp >= charStats.xp_require) {
+        leveled_up = true;
+        charStats.level++;
+        var newLvl = charStats.level;
+        show_debug_message("  >>> LEVEL UP! " + _char_key + " reached Level " + string(newLvl) + " <<<");
+
+        // Stat increases
+        charStats.maxhp += 5 + irandom(2);
+        charStats.maxmp += 2 + irandom(1);
+        charStats.atk++;
+        charStats.def++;
+        charStats.matk++;
+        charStats.mdef++;
+        charStats.spd += (irandom(3) == 0);
+        charStats.luk += (irandom(4) == 0);
+
+        // Restore HP/MP
+        charStats.hp = charStats.maxhp;
+        charStats.mp = charStats.maxmp;
+
+        // Learn spells
+        if (variable_global_exists("spell_db")
+         && ds_exists(global.spell_db.learning_schedule, ds_type_map)
+         && ds_map_exists(global.spell_db.learning_schedule, _char_key)) {
+            var sched = ds_map_find_value(global.spell_db.learning_schedule, _char_key);
+            if (ds_exists(sched, ds_type_map)) {
+                var lvlStr = string(newLvl);
+                if (ds_map_exists(sched, lvlStr)) {
+                    var spellKey = ds_map_find_value(sched, lvlStr);
+                    if (variable_struct_exists(global.spell_db, spellKey)) {
+                        var spellData = global.spell_db[$ spellKey];
+                        var known = false;
+                        for (var i = 0; i < array_length(charStats.skills); i++) {
+                            if (is_struct(charStats.skills[i])
+                             && charStats.skills[i].name == spellData.name) {
+                                known = true;
+                                break;
+                            }
+                        }
+                        if (!known) {
+                            array_push(charStats.skills, struct_copy(spellData));
+                            show_debug_message("    >>> Learned '" + spellData.name + "' <<<");
+                        }
+                    }
+                }
+            }
+        }
+
+        // Recompute XP requirement
+        charStats.xp_require = scr_GetXPForLevel(newLvl + 1);
+        show_debug_message("  [AddXP] New XP requirement: " + string(charStats.xp_require));
+    }
+
+    show_debug_message("  [AddXP] Final Lvl=" + string(charStats.level) 
+                     + ", XP=" + string(charStats.xp) + "/" + string(charStats.xp_require));
+
+    // 7) Replace back into map
+    ds_map_replace(global.party_current_stats, _char_key, charStats);
+
+    return leveled_up;
 }
+
