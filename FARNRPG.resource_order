@@ -65,7 +65,7 @@
     {"name":"scr_CalculateStatDifference","order":20,"path":"scripts/scr_CalculateStatDifference/scr_CalculateStatDifference.yy",},
     {"name":"scr_CastSkill","order":5,"path":"scripts/scr_CastSkill/scr_CastSkill.yy",},
     {"name":"scr_draw_sprite_nine_slice_manual","order":21,"path":"scripts/scr_draw_sprite_nine_slice_manual/scr_draw_sprite_nine_slice_manual.yy",},
-    {"name":"scr_EnemyAttackRandomm","order":24,"path":"scripts/scr_EnemyAttackRandomm/scr_EnemyAttackRandomm.yy",},
+    {"name":"scr_EnemyAttackRandom","order":24,"path":"scripts/scr_EnemyAttackRandom/scr_EnemyAttackRandom.yy",},
     {"name":"scr_FetchCharacterInfo","order":13,"path":"scripts/scr_FetchCharacterInfo/scr_FetchCharacterInfo.yy",},
     {"name":"scr_GetEnemyDataFromName","order":4,"path":"scripts/scr_GetEnemyDataFromName/scr_GetEnemyDataFromName.yy",},
     {"name":"scr_GetItemData","order":19,"path":"scripts/scr_GetItemData/scr_GetItemData.yy",},

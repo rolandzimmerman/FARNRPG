@@ -1,9 +1,9 @@
 {
   "$GMScript":"v1",
-  "%Name":"scr_EnemyAttackRandomm",
+  "%Name":"scr_EnemyAttackRandom",
   "isCompatibility":false,
   "isDnD":false,
-  "name":"scr_EnemyAttackRandomm",
+  "name":"scr_EnemyAttackRandom",
   "parent":{
     "name":"Scripts",
     "path":"folders/Scripts.yy",
