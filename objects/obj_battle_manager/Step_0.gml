@@ -1,18 +1,5 @@
 /// obj_battle_manager :: Step Event
-/// @description Manages battle state, actions, UI visibility, status effects, party turn order, and target selection.
 
-// --- Control UI Layer Visibility ---
-if (variable_global_exists("layer_id_radial_menu") && global.layer_id_radial_menu != -1) {
-    var _lid = global.layer_id_radial_menu;
-    if (layer_exists(_lid)) {
-        var _sv = (global.battle_state == "player_input");
-        if (layer_get_visible(_lid) != _sv) {
-            layer_set_visible(_lid, _sv);
-        }
-    }
-}
-
-// Process current battle state
 switch (global.battle_state) {
 
     case "player_input":
@@ -22,354 +9,165 @@ switch (global.battle_state) {
 
     case "TargetSelect":
     {
+        show_debug_message("Manager Step: In TargetSelect State");
+        if (!variable_global_exists("battle_enemies") || !ds_exists(global.battle_enemies, ds_type_list)) {
+             global.battle_state = "check_win_loss";
+             break;
+        }
         var _enemy_count = ds_list_size(global.battle_enemies);
+
         if (_enemy_count <= 0) {
             global.battle_state = "check_win_loss";
+            stored_action_data = undefined;
+            selected_target_id = noone;
         } else {
             var P = 0;
-            var _up    = keyboard_check_pressed(vk_up)   || gamepad_button_check_pressed(P, gp_padu);
-            var _down  = keyboard_check_pressed(vk_down) || gamepad_button_check_pressed(P, gp_padd);
-            var _conf  = keyboard_check_pressed(vk_enter)|| keyboard_check_pressed(vk_space) || gamepad_button_check_pressed(P, gp_face1);
-            var _cancel= keyboard_check_pressed(vk_escape)|| gamepad_button_check_pressed(P, gp_face2);
+            var _up = keyboard_check_pressed(vk_up) || gamepad_button_check_pressed(P, gp_padu);
+            var _down = keyboard_check_pressed(vk_down) || gamepad_button_check_pressed(P, gp_padd);
+            var _conf = keyboard_check_pressed(vk_enter) || keyboard_check_pressed(vk_space) || gamepad_button_check_pressed(P, gp_face1);
+            var _cancel = keyboard_check_pressed(vk_escape)|| gamepad_button_check_pressed(P, gp_face2);
 
-            if (_down)  global.battle_target = (global.battle_target + 1) % _enemy_count;
-            else if (_up) global.battle_target = (global.battle_target - 1 + _enemy_count) % _enemy_count;
+            if (_up) show_debug_message(" -> TargetSelect: UP pressed");
+            if (_down) show_debug_message(" -> TargetSelect: DOWN pressed");
+            if (_conf) show_debug_message(" -> TargetSelect: CONFIRM pressed");
+            if (_cancel) show_debug_message(" -> TargetSelect: CANCEL pressed");
+
+            if (_down) {
+                global.battle_target = (global.battle_target + 1) % _enemy_count;
+            }
+            else if (_up) {
+                global.battle_target = (global.battle_target - 1 + _enemy_count) mod _enemy_count;
+            }
             else if (_conf) {
+                show_debug_message(" -> Target Confirmed! Target index: " + string(global.battle_target));
                 if (global.battle_target >= 0 && global.battle_target < _enemy_count) {
                     selected_target_id = global.battle_enemies[| global.battle_target];
                     if (instance_exists(selected_target_id)) {
+                        show_debug_message(" -> Valid target instance found (ID: " + string(selected_target_id) + "). Changing state to ExecutingAction.");
                         global.battle_state = "ExecutingAction";
-                        break;
-                    }
-                }
-                selected_target_id = noone;
-                global.battle_target = 0;
-            }
+                    } else { // Target instance invalidated
+                        show_debug_message(" -> ERROR: Selected target instance does not exist! Returning.");
+                        var _prev = "player_input";
+                        if (is_struct(stored_action_data)) {
+                             if (variable_struct_exists(stored_action_data, "usable_in_battle")) { _prev="item_select"; }
+                             else if (variable_struct_exists(stored_action_data, "cost")) { _prev="skill_select"; }
+                        }
+                        // If returning to item select due to invalid target, add item back
+                        if (_prev == "item_select" && script_exists(scr_AddInventoryItem) && is_struct(stored_action_data) && variable_struct_exists(stored_action_data, "item_key")) {
+                             scr_AddInventoryItem(stored_action_data.item_key, 1);
+                        }
+                        global.battle_state = _prev;
+                        stored_action_data = undefined;
+                        selected_target_id = noone;
+                        global.battle_target = 0; // Reset target index
+                    } // End else (instance_exists check)
+                } else { // Index somehow invalid
+                     show_debug_message(" -> ERROR: global.battle_target index invalid! Resetting.");
+                     selected_target_id = noone;
+                     global.battle_target = 0;
+                     global.battle_state = "player_input"; // Go back to safety
+                     stored_action_data = undefined;
+                } // End else (index validity check)
+            } // End else if (_conf)
             else if (_cancel) {
+                show_debug_message(" -> Target selection Cancelled. Returning.");
                 var _prev = "player_input";
                 if (is_struct(stored_action_data)) {
-                    if      (variable_struct_exists(stored_action_data, "usable_in_battle")) _prev="item_select";
-                    else if (variable_struct_exists(stored_action_data, "cost"))             _prev="skill_select";
+                    if (variable_struct_exists(stored_action_data, "usable_in_battle")) {
+                        _prev="item_select";
+                        // Add item back if cancelled AFTER selection
+                        if (script_exists(scr_AddInventoryItem) && variable_struct_exists(stored_action_data, "item_key")) {
+                            scr_AddInventoryItem(stored_action_data.item_key, 1);
+                            show_debug_message(" -> Restored item '" + stored_action_data.item_key + "'.");
+                        }
+                    } else if (variable_struct_exists(stored_action_data, "cost")) {
+                         _prev="skill_select";
+                    }
                 }
                 global.battle_state = _prev;
-                stored_action_data  = undefined;
-                selected_target_id  = noone;
-                break;
-            }
-        }
-    }
-    break;
+                stored_action_data = undefined;
+                selected_target_id = noone;
+            } // End else if (_cancel)
+        } // End else (_enemy_count > 0)
+    } // End case block scope
+    break; // End TargetSelect
 
     case "ExecutingAction":
     {
-        var _action_performed = false;
-        var _player_actor     = noone;
-        if (ds_list_size(global.battle_party) > global.active_party_member_index) {
-            _player_actor = global.battle_party[| global.active_party_member_index];
-        }
+        show_debug_message("Manager Step: In ExecutingAction State");
+        var _action_performed = false; var _player_actor = noone;
+        if (variable_global_exists("active_party_member_index") && variable_global_exists("battle_party") && ds_exists(global.battle_party, ds_type_list)) { if (ds_list_size(global.battle_party) > global.active_party_member_index && global.active_party_member_index >= 0) { _player_actor = global.battle_party[| global.active_party_member_index]; } }
+        show_debug_message(" -> Stored Action Data: " + string(stored_action_data)); show_debug_message(" -> Selected Target ID: " + string(selected_target_id));
 
-        if (instance_exists(_player_actor) && variable_instance_exists(_player_actor, "data") && is_struct(_player_actor.data)) {
-            var _pd = _player_actor.data;
+        if (instance_exists(_player_actor)) {
+            var user_status_info = script_exists(scr_GetStatus) ? scr_GetStatus(_player_actor) : undefined;
+            if (is_struct(user_status_info)) { if (user_status_info.effect == "shame") { _action_performed = true; } else if (user_status_info.effect == "bind" && irandom(99) < 50) { _action_performed = true; } }
 
-            // Bind skip
-            if (_pd.status == "bind" && irandom(99) < 50) {
-                var popB = instance_create_layer(_player_actor.x, _player_actor.y - 64, "Instances", obj_popup_damage);
-                if (popB != noone) { popB.damage_amount = "Bound!"; popB.text_color = c_gray; }
-                show_debug_message("   ❌ " + string(_player_actor) + " is Bound! Turn skipped.");
-                _action_performed = true;
+            if (!_action_performed) {
+                var _pd = _player_actor.data;
+                if (stored_action_data == "Attack") { if (script_exists(scr_PerformAttack)) { _action_performed = scr_PerformAttack(_player_actor, selected_target_id); } else { _action_performed = false; } }
+                else if (is_struct(stored_action_data) && variable_struct_exists(stored_action_data, "usable_in_battle")) { if (script_exists(scr_UseItem)) { _action_performed = scr_UseItem(_player_actor, stored_action_data, selected_target_id); } else { _action_performed = false; } }
+                else if (is_struct(stored_action_data) && variable_struct_exists(stored_action_data, "effect")) { if (script_exists(scr_CastSkill)) { _action_performed = scr_CastSkill(_player_actor, stored_action_data, selected_target_id); } else { _action_performed = false; } }
+                else if (stored_action_data == "Defend") { if (variable_struct_exists(_pd, "is_defending")) { _pd.is_defending = true; } _action_performed = true; }
+                else { _action_performed = false; }
             }
-            // Blind miss
-            else if (_pd.status == "blind" && irandom(99) < 50) {
-                var popM = instance_create_layer(_player_actor.x, _player_actor.y - 64, "Instances", obj_popup_damage);
-                if (popM != noone) { popM.damage_amount = "Miss!"; popM.text_color = c_white; }
-                show_debug_message("   ❌ " + string(_player_actor) + " is Blind! Attack missed.");
-                _action_performed = true;
-            }
-            // Attack
-            else if (stored_action_data == "Attack") {
-                if (selected_target_id != noone && instance_exists(selected_target_id)) {
-                    var _ti = selected_target_id;
-                    if (variable_instance_exists(_ti, "data") && is_struct(_ti.data)) {
-                        var _td = _ti.data;
-                        var pa  = _pd.atk;
-                        var td  = _td.def;
-                        var pl  = _pd.luk;
-                        var cc  = 5 + floor(pl / 4);
-                        var ic  = (irandom(99) < cc);
-                        var cm  = 1.5;
-                        var dmg = max(1, pa - td);
-                        if (ic) dmg = floor(dmg * cm);
-                        if (variable_struct_exists(_td, "is_defending") && _td.is_defending) dmg = floor(dmg / 2);
+        } else { _action_performed = false; }
 
-                        _td.hp = max(0, _td.hp - dmg);
-
-                        if (object_exists(obj_popup_damage)) {
-                            var pop = instance_create_layer(_ti.x, _ti.y - 64, "Instances", obj_popup_damage);
-                            if (pop != noone) {
-                                pop.damage_amount = string(dmg);
-                                if (ic) {
-                                    pop.damage_amount = "CRIT! " + pop.damage_amount;
-                                    pop.text_color     = c_yellow;
-                                }
-                            }
-                        }
-                        _action_performed = true;
-                    }
-                }
-            }
-            // Item
-            else if (is_struct(stored_action_data) && variable_struct_exists(stored_action_data, "usable_in_battle")) {
-                var _item = stored_action_data;
-                var _t    = selected_target_id;
-                var _ok   = false;
-                switch (_item.effect) {
-                    case "heal_hp":
-                        if (instance_exists(_t) && variable_instance_exists(_t,"data") && is_struct(_t.data)) {
-                            var _d = _t.data;
-                            if (variable_struct_exists(_d,"hp") && variable_struct_exists(_d,"maxhp")) {
-                                var old = _d.hp;
-                                _d.hp = min(_d.maxhp, _d.hp + _item.value);
-                                var hld = _d.hp - old;
-                                if (hld > 0) {
-                                    if (object_exists(obj_popup_damage)) {
-                                        var pop = instance_create_layer(_t.x, _t.y - 64, "Instances", obj_popup_damage);
-                                        if (pop != noone) {
-                                            pop.damage_amount = "+" + string(hld);
-                                            pop.text_color    = c_lime;
-                                        }
-                                    }
-                                }
-                                _ok = true;
-                            }
-                        }
-                        break;
-                    case "damage_enemy":
-                        if (instance_exists(_t) && variable_instance_exists(_t,"data") && is_struct(_t.data)) {
-                            var _d = _t.data;
-                            if (variable_struct_exists(_d,"hp")) {
-                                _d.hp = max(0, _d.hp - _item.value);
-                                if (object_exists(obj_popup_damage)) {
-                                    var pop = instance_create_layer(_t.x, _t.y - 64, "Instances", obj_popup_damage);
-                                    if (pop != noone) pop.damage_amount = string(_item.value);
-                                }
-                                _ok = true;
-                            }
-                        }
-                        break;
-                    case "cure_status":
-                        if (instance_exists(_t) && variable_instance_exists(_t,"data") && is_struct(_t.data)) {
-                            var _d = _t.data;
-                            if (_d.status == _item.value) {
-                                _d.status = "none";
-                                if (object_exists(obj_popup_damage)) {
-                                    var pop = instance_create_layer(_t.x, _t.y - 64, "Instances", obj_popup_damage);
-                                    if (pop != noone) {
-                                        pop.damage_amount = "Cured!";
-                                        pop.text_color    = c_aqua;
-                                    }
-                                }
-                            }
-                            _ok = true;
-                        }
-                        break;
-                    default:
-                        _ok = true;
-                        break;
-                }
-                _action_performed = _ok;
-            }
-            // Skill
-            else if (is_struct(stored_action_data)) {
-                _action_performed = scr_CastSkill(_player_actor, stored_action_data, selected_target_id);
-            }
-            // Defend
-            else if (stored_action_data == "Defend") {
-                _pd.is_defending = true;
-                var popD = instance_create_layer(_player_actor.x, _player_actor.y - 64, "Instances", obj_popup_damage);
-                if (popD != noone) {
-                    popD.damage_amount = "DEFEND";
-                    popD.text_color    = c_aqua;
-                }
-                _action_performed = true;
-            }
-        }
-
-        // Clear for next
-        stored_action_data = undefined;
-        selected_target_id = noone;
-
-        // Advance turns
+        stored_action_data = undefined; selected_target_id = noone;
+        show_debug_message(" -> Final Action Performed Flag: " + string(_action_performed));
         if (_action_performed) {
+            if(instance_exists(_player_actor) && variable_instance_exists(_player_actor,"data") && is_struct(_player_actor.data) && variable_struct_exists(_player_actor.data,"is_defending")) { _player_actor.data.is_defending = false; }
             global.active_party_member_index++;
-            if (global.active_party_member_index >= ds_list_size(global.battle_party)) {
-                global.active_party_member_index = 0;
-                global.enemy_turn_index         = 0;
-                global.battle_state             = "waiting_enemy";
-                alarm[0]                        = 30;
-            } else {
-                global.battle_state = "player_input";
-            }
-        } else {
-            global.battle_state = "player_input";
-        }
+            if (ds_exists(global.battle_party, ds_type_list) && global.active_party_member_index >= ds_list_size(global.battle_party)) { global.active_party_member_index = 0; global.enemy_turn_index = 0; global.battle_state = "waiting_enemy"; alarm[0] = 30; }
+            else { global.battle_state = "player_input"; }
+        } else { global.battle_state = "player_input"; }
     }
-    break;
+    break; // End ExecutingAction
 
-    case "waiting_after_player":
-        alarm[0] = -1;
-        global.battle_state = "check_win_loss";
-        break;
-
-    case "waiting_next_enemy":
-    case "waiting_enemy":
-        break;
-
-    case "check_win_loss":
-    {
-        // Poison on party
-        for (var i = 0; i < ds_list_size(global.battle_party); i++) {
-            var p = global.battle_party[| i];
-            if (instance_exists(p) && p.data.status == "poison") {
-                var dmg = max(1, floor(p.data.maxhp * 0.05));
-                p.data.hp = max(0, p.data.hp - dmg);
-                if (object_exists(obj_popup_damage)) {
-                    var pop = instance_create_layer(p.x, p.y - 64, "Instances", obj_popup_damage);
-                    if (pop != noone) pop.damage_amount = string(dmg);
-                }
-            }
-        }
-        // Poison on enemies
-        for (var i = 0; i < ds_list_size(global.battle_enemies); i++) {
-            var e = global.battle_enemies[| i];
-            if (instance_exists(e) && e.data.status == "poison") {
-                var dmg = max(1, floor(e.data.maxhp * 0.05));
-                e.data.hp = max(0, e.data.hp - dmg);
-                if (object_exists(obj_popup_damage)) {
-                    var pop = instance_create_layer(e.x, e.y - 64, "Instances", obj_popup_damage);
-                    if (pop != noone) pop.damage_amount = string(dmg);
-                }
-            }
-        }
-
-        // Decrement statuses (party)
-        for (var i = 0; i < ds_list_size(global.battle_party); i++) {
-            var p = global.battle_party[| i];
-            if (instance_exists(p) && variable_struct_exists(p.data, "status_turns")) {
-                p.data.status_turns--;
-                if (p.data.status_turns <= 0) {
-                    p.data.status = "none";
-                    show_debug_message("   ✨ Cleared status on party " + string(p));
-                }
-            }
-        }
-        // Decrement statuses (enemies)
-        for (var i = 0; i < ds_list_size(global.battle_enemies); i++) {
-            var e = global.battle_enemies[| i];
-            if (instance_exists(e) && variable_struct_exists(e.data, "status_turns")) {
-                e.data.status_turns--;
-                if (e.data.status_turns <= 0) {
-                    e.data.status = "none";
-                    show_debug_message("   ✨ Cleared status on enemy " + string(e));
-                }
-            }
-        }
-
-        // Check kills and XP
-        var xp = 0;
-        for (var i = ds_list_size(global.battle_enemies)-1; i >= 0; i--) {
-            var e = global.battle_enemies[| i];
-            if (instance_exists(e) && e.data.hp <= 0) {
-                if (variable_struct_exists(e.data,"xp")) xp += e.data.xp;
-                instance_destroy(e);
-                ds_list_delete(global.battle_enemies, i);
-            }
-        }
-        if (xp > 0) total_xp_from_battle += xp;
-
-        // Check win/loss
-        var anyAliveP = false;
-        for (var i = 0; i < ds_list_size(global.battle_party); i++) {
-            if (global.battle_party[|i].data.hp > 0) anyAliveP = true;
-        }
-        var anyAliveE = ds_list_size(global.battle_enemies) > 0;
-
-        if (!anyAliveE) {
-            global.battle_state = "victory"; alarm[0] = 30;
-        } else if (!anyAliveP) {
-            global.battle_state = "defeat";  alarm[0] = 30;
-        } else {
-            if (global.enemy_turn_index >= ds_list_size(global.battle_enemies)) {
-                global.active_party_member_index = 0;
-                global.enemy_turn_index         = 0;
-                global.battle_state             = "player_input";
-                global.battle_target            = clamp(global.battle_target,0,ds_list_size(global.battle_enemies)-1);
-            } else {
-                global.battle_state = "waiting_enemy"; alarm[0] = 30;
-            }
-        }
-    }
-    break;
+    case "waiting_after_player": alarm[0] = -1; global.battle_state = "check_win_loss"; break;
+    case "waiting_next_enemy": break;
+    case "waiting_enemy": break;
 
     case "enemy_turn":
     {
-        var _complete = false;
-        var _sz       = ds_list_size(global.battle_enemies);
+        if (alarm[0] > 0) break;
+        show_debug_message("Manager Step: In enemy_turn State (Index: " + string(global.enemy_turn_index) + ")");
+        var _enemy_acted = false;
+        if (!ds_exists(global.battle_enemies, ds_type_list)) { global.battle_state = "check_win_loss"; break;}
+        var _sz = ds_list_size(global.battle_enemies);
+        show_debug_message("  Enemy List Size: " + string(_sz));
 
         if (global.enemy_turn_index < _sz) {
-            var e = global.battle_enemies[| global.enemy_turn_index];
-            if (instance_exists(e) && e.data.hp > 0) {
-                // Bind skip
-                if (e.data.status == "bind" && irandom(99) < 50) {
-                    var popB = instance_create_layer(e.x, e.y-64,"Instances",obj_popup_damage);
-                    if (popB!=noone) { popB.damage_amount="Bound!"; popB.text_color=c_gray; }
-                    _complete = true;
-                }
-                // Blind miss
-                else if (e.data.status == "blind" && irandom(99) < 50) {
-                    var popM = instance_create_layer(e.x,e.y-64,"Instances",obj_popup_damage);
-                    if (popM!=noone) { popM.damage_amount="Miss!"; popM.text_color=c_white; }
-                    _complete = true;
-                }
-                else {
-                    // Attack random party member
-                    var living = [];
-                    for (var i=0; i<ds_list_size(global.battle_party); i++) {
-                        var p = global.battle_party[|i];
-                        if (p.data.hp>0) array_push(living,p);
-                    }
-                    if (array_length(living)>0) {
-                        var tgt = living[irandom(array_length(living)-1)];
-                        var dmg = max(1, e.data.atk - tgt.data.def);
-                        if (tgt.data.is_defending) dmg = floor(dmg/2);
-                        tgt.data.hp = max(0,tgt.data.hp - dmg);
-                        if (object_exists(obj_popup_damage)) {
-                            var pop = instance_create_layer(tgt.x,tgt.y-64,"Instances",obj_popup_damage);
-                            if (pop!=noone) pop.damage_amount=string(dmg);
-                        }
-                        tgt.data.is_defending = false;
-                    }
-                    _complete = true;
-                }
-            } else {
-                _complete = true;
-            }
-
-            if (_complete) {
-                global.enemy_turn_index++;
-                if (global.enemy_turn_index >= _sz) {
-                    global.battle_state = "check_win_loss";
-                } else {
-                    global.battle_state = "waiting_next_enemy";
-                    alarm[0]            = 30;
-                }
-            }
-        } else {
-            global.battle_state = "check_win_loss";
-        }
+            var e_inst = global.battle_enemies[| global.enemy_turn_index];
+            show_debug_message("  Processing Enemy Instance ID: " + string(e_inst));
+            if (instance_exists(e_inst) && variable_instance_exists(e_inst,"data") && is_struct(e_inst.data) && variable_struct_exists(e_inst.data,"hp") && e_inst.data.hp > 0) {
+                 show_debug_message("   -> Enemy is valid and alive (HP: " + string(e_inst.data.hp) + ")");
+                 var enemy_status_info = script_exists(scr_GetStatus) ? scr_GetStatus(e_inst) : undefined;
+                 show_debug_message("   -> Enemy Status Check result: " + string(enemy_status_info));
+                 if (is_struct(enemy_status_info) && enemy_status_info.effect == "bind" && irandom(99) < 50) { _enemy_acted = true; }
+                 else { if (script_exists(scr_EnemyAttackRandom)) { _enemy_acted = scr_EnemyAttackRandom(e_inst); show_debug_message("   -> scr_EnemyAttackRandom returned: " + string(_enemy_acted)); } else { _enemy_acted = true; } }
+             } else { _enemy_acted = true; }
+             show_debug_message("  -> Enemy Acted Flag for index " + string(global.enemy_turn_index) + ": " + string(_enemy_acted));
+             if (_enemy_acted) { global.enemy_turn_index++; show_debug_message("  -> Incremented enemy_turn_index to: " + string(global.enemy_turn_index)); if (global.enemy_turn_index >= _sz) { global.battle_state = "check_win_loss"; show_debug_message("   -> End of enemy phase. Switching to check_win_loss."); } else { global.battle_state = "waiting_next_enemy"; alarm[0] = 30; show_debug_message("   -> Moving to next enemy. Switching to waiting_next_enemy."); } }
+             else { alarm[0] = 5; }
+        } else { global.battle_state = "check_win_loss"; }
     }
-    break;
+    break; // End enemy_turn
 
-    default:
-        show_debug_message("WARNING: obj_battle_manager in unknown state: " + string(global.battle_state));
-    break;
-}
+    case "check_win_loss":
+    {
+        show_debug_message("Manager Step: In check_win_loss State");
+        if (script_exists(scr_UpdateStatusEffects)) { scr_UpdateStatusEffects(); } else { show_debug_message("ERROR: scr_UpdateStatusEffects script missing!"); }
+        var xp_gained_this_check = 0; if (ds_exists(global.battle_enemies, ds_type_list)) { for (var i = ds_list_size(global.battle_enemies) - 1; i >= 0; i--) { var e=global.battle_enemies[|i]; if(instance_exists(e)){ if (variable_instance_exists(e,"data") && is_struct(e.data) && variable_struct_exists(e.data,"hp") && e.data.hp <= 0){ var xp_val = variable_struct_exists(e.data,"xp_value")?e.data.xp_value : (variable_struct_exists(e.data,"xp")?e.data.xp : 0); xp_gained_this_check += xp_val; instance_destroy(e); ds_list_delete(global.battle_enemies, i); } } else { ds_list_delete(global.battle_enemies,i); } } } total_xp_from_battle += xp_gained_this_check;
+        show_debug_message(" -> CheckWinLoss: XP gained this check = " + string(xp_gained_this_check) + ", Total XP = " + string(total_xp_from_battle));
+        var any_party_alive = false; if(ds_exists(global.battle_party,ds_type_list)){for(var i=0;i<ds_list_size(global.battle_party); i++){var p=global.battle_party[|i]; if(instance_exists(p) && variable_instance_exists(p,"data") && is_struct(p.data) && p.data.hp > 0){any_party_alive=true; break;}}}
+        var any_enemies_alive = (ds_exists(global.battle_enemies, ds_type_list) && ds_list_size(global.battle_enemies) > 0);
+        if (!any_enemies_alive && any_party_alive) { show_debug_message(" -> Condition: Victory!"); global.battle_state = "victory"; alarm[0] = 60; }
+        else if (!any_party_alive) { show_debug_message(" -> Condition: Defeat!"); global.battle_state = "defeat"; alarm[0] = 60; }
+        else { show_debug_message(" -> Battle continues. Starting player turn."); global.active_party_member_index = 0; global.enemy_turn_index=0; global.battle_state = "player_input"; if(!any_enemies_alive) global.battle_target = -1; else global.battle_target = 0; }
+    }
+    break; // End check_win_loss
+
+    case "victory": case "defeat": case "return_to_field": break;
+    default: if (get_timer() mod 60 == 0) { show_debug_message("WARNING: obj_battle_manager in unknown state: " + string(global.battle_state)); } break;
+} // End Switch

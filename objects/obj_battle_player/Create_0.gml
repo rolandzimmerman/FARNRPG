@@ -1,7 +1,16 @@
 /// obj_battle_player :: Create Event
-// Minimal initialization. Data and sprite assigned later in Step Event.
+// Initializes battle player state. Status effects are now handled globally.
 
 show_debug_message("--- obj_battle_player Create Start (Instance: " + string(id) + ") ---");
-// The 'data' variable is assigned by obj_battle_manager AFTER this event.
-// Sprite will be set in the Step event once data is available.
-sprite_assigned = false; // Flag to ensure sprite is set only once
+
+// Initialize 'data' struct - holds persistent/calculated stats
+data = {};
+
+// status_effect   = "none"; // REMOVED Instance Variable
+// status_duration = 0;      // REMOVED Instance Variable
+
+// Flag for sprite assignment
+sprite_assigned = false;
+
+// List for usable items (populated by Step event)
+battle_usable_items = [];
