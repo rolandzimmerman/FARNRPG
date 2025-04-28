@@ -79,6 +79,7 @@
     {"name":"scr_PerformAttack","order":25,"path":"scripts/scr_PerformAttack/scr_PerformAttack.yy",},
     {"name":"scr_RemoveInventoryItem","order":22,"path":"scripts/scr_RemoveInventoryItem/scr_RemoveInventoryItem.yy",},
     {"name":"scr_save_game","order":8,"path":"scripts/scr_save_game/scr_save_game.yy",},
+    {"name":"scr_SpeedQueue","order":30,"path":"scripts/scr_SpeedQueue/scr_SpeedQueue.yy",},
     {"name":"scr_UpdateStatusEffects","order":29,"path":"scripts/scr_UpdateStatusEffects/scr_UpdateStatusEffects.yy",},
     {"name":"scr_UseItem","order":26,"path":"scripts/scr_UseItem/scr_UseItem.yy",},
     {"name":"struct_copy","order":16,"path":"scripts/struct_copy/struct_copy.yy",},
