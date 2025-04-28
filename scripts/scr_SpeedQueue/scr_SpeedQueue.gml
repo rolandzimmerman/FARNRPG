@@ -55,7 +55,7 @@ function scr_SpeedQueue(_combatant_list, _base_tick_value) {
 }
 
 /// @function scr_ResetTurnCounter(instance_id, base_tick_value)
-/// @description Resets the turn counter for a given combatant after their action.
+/// @description Resets the turn counter for a given combatant after their action, considering Haste/Slow.
 /// @param {Id.Instance} instance_id The instance ID of the combatant whose turn counter needs resetting.
 /// @param {Real} base_tick_value The base value for calculations.
 /// @returns {Bool} True if successful, false otherwise.
@@ -71,24 +71,39 @@ function scr_ResetTurnCounter(_instance_id, _base_tick_value) {
     }
      if (!variable_instance_exists(_instance_id, "turnCounter")) {
          show_debug_message("scr_ResetTurnCounter: Error - Instance " + string(_instance_id) + " missing turnCounter variable.");
-         // Attempt to add it if missing? Or just fail. Let's fail for now.
          return false;
     }
 
-
-    var _spd = max(1, _instance_id.data.spd); // Ensure speed is at least 1 to avoid division by zero
+    var _spd = max(1, _instance_id.data.spd); // Ensure speed is at least 1
+    
+    // --- Haste/Slow Multiplier ---
+    var _speed_status_multiplier = 1.0; // Default: Normal speed
+    var _status_info = script_exists(scr_GetStatus) ? scr_GetStatus(_instance_id) : undefined;
+    
+    if (is_struct(_status_info)) {
+        switch (_status_info.effect) {
+            case "haste":
+                _speed_status_multiplier = 0.66; // Example: 33% faster recovery (lower number = faster)
+                show_debug_message(" -> Haste applied to counter calculation.");
+                break;
+            case "slow":
+                 _speed_status_multiplier = 1.5; // Example: 50% slower recovery (higher number = slower)
+                 show_debug_message(" -> Slow applied to counter calculation.");
+                 break;
+        }
+    }
     
     // TODO: Implement Action Cost Modifiers later if needed
     // var _action_cost_modifier = 1.0; // Default
     // Determine modifier based on the action just taken...
     
-    _instance_id.turnCounter = _base_tick_value / _spd; // * _action_cost_modifier;
+    // Calculate base counter and apply multipliers
+    _instance_id.turnCounter = (_base_tick_value / _spd) * _speed_status_multiplier; // * _action_cost_modifier;
     
-    show_debug_message("scr_ResetTurnCounter: Reset counter for " + string(_instance_id) + " to " + string(_instance_id.turnCounter) + " (Speed: " + string(_spd) + ")");
+    show_debug_message("scr_ResetTurnCounter: Reset counter for " + string(_instance_id) + " to " + string(_instance_id.turnCounter) + " (Speed: " + string(_spd) + ", Multiplier: " + string(_speed_status_multiplier) + ")");
     
     return true;
 }
-
 
 /// @function scr_CalculateTurnOrderDisplay(combatant_list, base_tick_value, count)
 /// @description Simulates future turns to generate a turn order display list.

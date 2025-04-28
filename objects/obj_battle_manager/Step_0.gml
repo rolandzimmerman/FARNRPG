@@ -57,38 +57,53 @@ switch (global.battle_state) {
           if (!_enemies_alive && !_party_alive) { global.battle_state = "defeat"; alarm[0] = 1; break; }
 
         // Calculate next turn using the script
-        var turn_result = { actor: noone, time_advance: 0 }; // Default
-        if (script_exists(scr_SpeedQueue)) {
-            turn_result = scr_SpeedQueue(combatants_all, BASE_TICK_VALUE);
-        } else {
-            show_debug_message("ERROR: scr_SpeedQueue script missing!");
-            global.battle_state = "defeat"; // Fail state
-            break;
-        }
-
+        var turn_result = script_exists(scr_SpeedQueue) ? scr_SpeedQueue(combatants_all, BASE_TICK_VALUE) : { actor: noone, time_advance: 0 };
         currentActor = turn_result.actor;
 
         if (currentActor == noone) {
             show_debug_message(" -> No valid actor found by speed queue. Checking win/loss.");
             global.battle_state = "check_win_loss"; 
         } else {
-            // We have an actor, determine if player or enemy
-            // ================= FIX IS HERE ====================
-            if (currentActor.object_index == obj_battle_player) { // More direct check
-            // ==================================================
-                show_debug_message(" -> Next Actor is Player: " + string(currentActor));
-                stored_action_data = undefined;
-                selected_target_id = noone;
-                // Update global index for the menu to highlight correct HUD
-                global.active_party_member_index = ds_list_find_index(global.battle_party, currentActor); 
-                global.battle_state = "player_input"; // <<< Use original string state
-                 // TODO: Add status check here if needed (e.g., if (ShouldSkipTurn(currentActor)) { global.battle_state = "action_complete"; })
+            // --- NEW: Check for Turn Skipping Status Effects ---
+            var skip_turn = false;
+            var status_info = script_exists(scr_GetStatus) ? scr_GetStatus(currentActor) : undefined;
+            
+            if (is_struct(status_info)) {
+                switch (status_info.effect) {
+                    case "shame":
+                        show_debug_message(" -> Actor " + string(currentActor) + " turn skipped due to Shame!");
+                        skip_turn = true;
+                        // Optional: Popup text
+                        // if (object_exists(obj_popup_damage)) { instance_create_layer(currentActor.x, currentActor.y-64, "Instances", obj_popup_damage).damage_amount = "Shamed!";}
+                        break;
+                    case "bind":
+                        if (irandom(99) < 50) { // 50% chance to be bound
+                             show_debug_message(" -> Actor " + string(currentActor) + " turn skipped due to Bind!");
+                             skip_turn = true;
+                             // Optional: Popup text
+                             // if (object_exists(obj_popup_damage)) { instance_create_layer(currentActor.x, currentActor.y-64, "Instances", obj_popup_damage).damage_amount = "Bound!";}
+                        }
+                        break;
+                    // Add other skipping statuses like "stop", "sleep", "petrify" here
+                    // case "stop": skip_turn = true; break;
+                }
             }
-            else // Assume enemy (add more checks here if you have multiple player/ally types)
-            {
-                show_debug_message(" -> Next Actor is Enemy: " + string(currentActor));
-                global.battle_state = "enemy_turn"; // <<< Use original string state
-                 // TODO: Add status check here if needed (e.g., if (ShouldSkipTurn(currentActor)) { global.battle_state = "action_complete"; })
+            
+            // --- Determine Next State ---
+            if (skip_turn) {
+                 global.battle_state = "action_complete"; // Skip directly to finishing the turn
+            } else {
+                 // Determine if player or enemy (using the corrected check)
+                 if (currentActor.object_index == obj_battle_player) { 
+                     show_debug_message(" -> Next Actor is Player: " + string(currentActor));
+                     stored_action_data = undefined;
+                     selected_target_id = noone;
+                     global.active_party_member_index = ds_list_find_index(global.battle_party, currentActor); 
+                     global.battle_state = "player_input"; 
+                 } else { // Assume enemy 
+                     show_debug_message(" -> Next Actor is Enemy: " + string(currentActor));
+                     global.battle_state = "enemy_turn"; 
+                 }
             }
         }
     }
@@ -99,14 +114,18 @@ switch (global.battle_state) {
     case "skill_select":
     case "item_select":
          // In these states, wait for input (likely handled by obj_battle_menu).
-         // Ensure the currentActor is still valid.
-        if (!instance_exists(currentActor) && global.battle_state == "player_input") { // Only check if we expect an actor
-             show_debug_message(" -> Player actor " + string(currentActor) + " invalid during input state " + global.battle_state + ". Recalculating turn.");
+         // Ensure the currentActor is still valid and not KO'd.
+        if (instance_exists(currentActor)) {
+             if (currentActor.data.hp <= 0) {
+                 show_debug_message(" -> Actor " + string(currentActor) + " is KO'd during state " + global.battle_state + ". Skipping turn.");
+                 global.battle_state = "action_complete"; // Skip turn
+             }
+             // Normal waiting for input otherwise
+        } else if (global.battle_state == "player_input" || global.battle_state == "skill_select" || global.battle_state == "item_select") { 
+             // Only recalculate if actor is missing during an expected player turn state
+             show_debug_message(" -> Actor " + string(currentActor) + " invalid during input state " + global.battle_state + ". Recalculating turn.");
              currentActor = noone;
              global.battle_state = "calculate_turn";
-        } else if (instance_exists(currentActor) && currentActor.data.hp <= 0 && global.battle_state == "player_input") {
-             show_debug_message(" -> Player actor " + string(currentActor) + " is KO'd. Skipping turn.");
-             global.battle_state = "action_complete"; // Skip turn
         }
         break; // Let obj_battle_menu handle transitions out of these states
 
@@ -127,7 +146,14 @@ switch (global.battle_state) {
              else global.battle_state = "calculate_turn"; // Actor gone, find next turn
              break;
          }
-         
+         // Check if actor is KO'd
+          else if (currentActor.data.hp <= 0) {
+              show_debug_message(" -> Actor " + string(currentActor) + " is KO'd during TargetSelect. Skipping turn.");
+              stored_action_data = undefined; selected_target_id = noone; // Clear action
+              global.battle_state = "action_complete"; 
+              break;
+          }
+
          // Check if enemies list exists and has entries
          if (!variable_global_exists("battle_enemies") || !ds_exists(global.battle_enemies, ds_type_list) || ds_list_empty(global.battle_enemies)) {
              show_debug_message(" -> No enemies to target. Cancelling action.");
@@ -185,48 +211,50 @@ switch (global.battle_state) {
     {
         show_debug_message("Manager Step: In ExecutingAction State for Actor: " + string(currentActor));
 
-        var _action_performed = false;
+        var _action_performed = false; // This flag indicates if the action was *attempted* or skipped, not necessarily if it succeeded
         if (instance_exists(currentActor)) {
-            // Check for status effects preventing action (Shame, Bind etc.) - Needs a helper script ideally
-            var user_status_info = script_exists(scr_GetStatus) ? scr_GetStatus(currentActor) : undefined;
-            var skip_action = false;
-            if (is_struct(user_status_info)) { 
-                if (user_status_info.effect == "shame") { skip_action = true; show_debug_message(" -> Action skipped: Shame"); } 
-                else if (user_status_info.effect == "bind" && irandom(99) < 50) { skip_action = true; show_debug_message(" -> Action skipped: Bind"); } 
-            }
-
-            if (!skip_action) { // If not skipped by status
+            // Check if actor is KO'd before attempting anything
+             if (currentActor.data.hp <= 0) {
+                  show_debug_message(" -> Actor " + string(currentActor) + " is KO'd during ExecutingAction. Skipping turn.");
+                  _action_performed = true; // Treat KO as a completed (skipped) action
+                  global.battle_state = "action_complete";
+             } else {
+                 // Status check is now handled in 'calculate_turn', so we assume if we reach here, the actor wasn't skipped by status.
                  var _pd = currentActor.data; // Player data
+                 var _action_succeeded = false; // Use a different flag for script success
                  
                  // --- Trigger Action ---
-                 if (stored_action_data == "Attack") { if (script_exists(scr_PerformAttack)) { _action_performed = scr_PerformAttack(currentActor, selected_target_id); } } 
-                 else if (is_struct(stored_action_data) && variable_struct_exists(stored_action_data, "usable_in_battle")) { if (script_exists(scr_UseItem)) { _action_performed = scr_UseItem(currentActor, stored_action_data, selected_target_id); } } 
-                 else if (is_struct(stored_action_data) && variable_struct_exists(stored_action_data, "effect")) { if (script_exists(scr_CastSkill)) { _action_performed = scr_CastSkill(currentActor, stored_action_data, selected_target_id); } } 
-                 else if (stored_action_data == "Defend") { if (variable_struct_exists(_pd, "is_defending")) { _pd.is_defending = true; } _action_performed = true; } // Defend is instant
+                 if (stored_action_data == "Attack") { if (script_exists(scr_PerformAttack)) { _action_succeeded = scr_PerformAttack(currentActor, selected_target_id); } } 
+                 else if (is_struct(stored_action_data) && variable_struct_exists(stored_action_data, "usable_in_battle")) { if (script_exists(scr_UseItem)) { _action_succeeded = scr_UseItem(currentActor, stored_action_data, selected_target_id); } } 
+                 else if (is_struct(stored_action_data) && variable_struct_exists(stored_action_data, "effect")) { if (script_exists(scr_CastSkill)) { _action_succeeded = scr_CastSkill(currentActor, stored_action_data, selected_target_id); } } 
+                 else if (stored_action_data == "Defend") { if (variable_struct_exists(_pd, "is_defending")) { _pd.is_defending = true; } _action_succeeded = true; } // Defend is instant
                  // Add other actions here
                  
+                 _action_performed = true; // Mark action as attempted/handled
+                 
                  // --- Transition ---
-                 if (_action_performed) {
-                      show_debug_message(" -> Action triggered successfully. Moving to action_complete.");
+                 if (_action_succeeded) {
+                      show_debug_message(" -> Action script returned success. Moving to action_complete.");
                       global.battle_state = "action_complete"; // New state name
                  } else {
-                      show_debug_message(" -> Action script failed or returned false. Returning to player_input.");
-                      stored_action_data = undefined; // Clear failed action
-                      selected_target_id = noone;
+                      show_debug_message(" -> Action script returned failure (e.g., not enough MP, invalid target). Returning to player_input.");
+                      // Don't clear stored_action_data here, player might want to re-target or choose different action
                       global.battle_state = "player_input"; // Let player choose again
                  }
-            } else {
-                // Action was skipped by status effect
-                _action_performed = true; // Mark as "performed" (skipped)
-                show_debug_message(" -> Action skipped due to status effect. Moving to action_complete.");
-                global.battle_state = "action_complete"; // New state name
-            }
+             } // end !KO check
         } else {
              show_debug_message(" -> ERROR: Current Actor disappeared during ExecutingAction. Recalculating turn.");
              currentActor = noone;
              stored_action_data = undefined;
              selected_target_id = noone;
              global.battle_state = "calculate_turn";
+             _action_performed = true; // Handled this path
+        }
+        
+        // If we didn't transition yet (e.g., error case above didn't hit), ensure we move on
+        if (!_action_performed) {
+             show_debug_message(" -> Fallback: Ensuring transition from ExecutingAction.");
+             global.battle_state = "action_complete"; // Default to moving on
         }
     }
     break; // End ExecutingAction
@@ -235,51 +263,58 @@ switch (global.battle_state) {
     {
         show_debug_message("Manager Step: In enemy_turn State for Actor: " + string(currentActor));
         
-        var _enemy_acted = false; // Flag to see if the enemy did something (or skipped)
-        if (instance_exists(currentActor) && currentActor.data.hp > 0) {
-            // Check status effects (Bind etc.)
-            var enemy_status_info = script_exists(scr_GetStatus) ? scr_GetStatus(currentActor) : undefined;
-            var skip_action = false;
-            if (is_struct(enemy_status_info) && enemy_status_info.effect == "bind" && irandom(99) < 50) { skip_action = true; show_debug_message(" -> Enemy action skipped: Bind"); }
-            
-            if (!skip_action) {
+        var _enemy_acted = false; // Flag to see if the enemy did something (or skipped/failed)
+        if (instance_exists(currentActor)) {
+             // Check if KO'd
+             if (currentActor.data.hp <= 0) {
+                 show_debug_message(" -> Enemy " + string(currentActor) + " is KO'd. Skipping turn.");
+                 _enemy_acted = true; // Treat KO as completed turn
+                 global.battle_state = "action_complete";
+             } else {
+                 // Status check is handled in 'calculate_turn'. Assume turn proceeds.
+                 var _action_succeeded = false;
                  // --- Trigger Enemy AI / Action ---
                  if (script_exists(scr_EnemyAttackRandom)) { 
-                     _enemy_acted = scr_EnemyAttackRandom(currentActor); 
-                     show_debug_message("    -> scr_EnemyAttackRandom returned: " + string(_enemy_acted));
+                     _action_succeeded = scr_EnemyAttackRandom(currentActor); 
+                     show_debug_message("    -> scr_EnemyAttackRandom returned: " + string(_action_succeeded));
                  } else {
                      show_debug_message("    -> WARNING: scr_EnemyAttackRandom missing! Enemy skips turn.");
-                     _enemy_acted = true; // Assume turn ends if AI script is missing
+                     _action_succeeded = true; // Assume turn ends if AI script is missing
                  }
-            } else {
-                 _enemy_acted = true; // Skipped due to status
-            }
-
-             // --- Transition ---
-             if (_enemy_acted) {
-                 show_debug_message(" -> Enemy action complete or skipped. Moving to action_complete.");
-                 global.battle_state = "action_complete"; // New state name
-             } else {
-                  show_debug_message(" -> Enemy action script returned false. Assuming turn end/failure.");
-                  global.battle_state = "action_complete"; // Move on even if AI script indicated failure/wait
-             }
-
+                 
+                 _enemy_acted = true; // Mark turn as processed
+                 
+                 // --- Transition ---
+                 // Assume AI script blocks or handles its own timing for now
+                 show_debug_message(" -> Enemy action processed. Moving to action_complete.");
+                 global.battle_state = "action_complete"; // Move on regardless of success/failure reported by AI script for now
+             } // end !KO check
         } else {
-             show_debug_message(" -> ERROR: Current Enemy Actor " + string(currentActor) + " invalid or dead. Moving to action_complete.");
+             show_debug_message(" -> ERROR: Current Enemy Actor " + string(currentActor) + " invalid. Moving to action_complete.");
+             _enemy_acted = true; // Treat as processed
              global.battle_state = "action_complete"; // Skip turn if enemy is gone/dead
+        }
+        
+        // Fallback transition
+         if (!_enemy_acted) {
+             show_debug_message(" -> Fallback: Ensuring transition from enemy_turn.");
+             global.battle_state = "action_complete"; 
         }
      }
      break; // End enemy_turn
 
     case "action_complete": // New state name
     {
-        // The currentActor has finished their turn. Reset counter, clear flags, update statuses, check win/loss.
+        // The currentActor has finished their turn (or skipped it). Reset counter, clear flags, update statuses, check win/loss.
         show_debug_message("Manager Step: action_complete for Actor: " + string(currentActor));
         
         if (instance_exists(currentActor)) {
              // Reset Defend status if applicable
              if (variable_instance_exists(currentActor, "data") && is_struct(currentActor.data) && variable_struct_exists(currentActor.data, "is_defending")) {
-                 currentActor.data.is_defending = false;
+                 if (currentActor.data.is_defending) {
+                      show_debug_message(" -> Resetting Defend status for " + string(currentActor));
+                      currentActor.data.is_defending = false;
+                 }
              }
              
              // Reset the turn counter for the actor who just went
@@ -317,29 +352,26 @@ switch (global.battle_state) {
     {
          show_debug_message("Manager Step: In check_win_loss State");
          
-         // --- Update Status Effects --- (This might be redundant if called in action_complete, check your scr_UpdateStatusEffects logic)
-         // if (script_exists(scr_UpdateStatusEffects)) { scr_UpdateStatusEffects(); } 
-         // else { show_debug_message("ERROR: scr_UpdateStatusEffects script missing!"); }
-
          // --- Check for and remove dead enemies, grant XP ---
          var xp_gained_this_check = 0;
          if (ds_exists(global.battle_enemies, ds_type_list)) {
              for (var i = ds_list_size(global.battle_enemies) - 1; i >= 0; i--) {
-                 var e = global.battle_enemies[| i];
-                 if (instance_exists(e)) {
-                     if (variable_instance_exists(e, "data") && is_struct(e.data) && variable_struct_exists(e.data, "hp") && e.data.hp <= 0) {
-                         var xp_val = variable_struct_exists(e.data,"xp_value")?e.data.xp_value : (variable_struct_exists(e.data,"xp")?e.data.xp : 0);
+                 var e_id = global.battle_enemies[| i]; // Get the ID first
+                 if (instance_exists(e_id)) {
+                     // Check HP using the ID
+                     if (variable_instance_exists(e_id, "data") && is_struct(e_id.data) && variable_struct_exists(e_id.data, "hp") && e_id.data.hp <= 0) {
+                         var xp_val = variable_struct_exists(e_id.data,"xp_value")?e_id.data.xp_value : (variable_struct_exists(e_id.data,"xp")?e_id.data.xp : 0);
                          xp_gained_this_check += xp_val;
-                         show_debug_message(" -> Enemy " + string(e) + " defeated. XP: " + string(xp_val));
+                         show_debug_message(" -> Enemy " + string(e_id) + " defeated. XP: " + string(xp_val));
                          ds_list_delete(global.battle_enemies, i); // Remove from global list
-                         var combatant_index = ds_list_find_index(combatants_all, e); // Remove from speed queue list
+                         var combatant_index = ds_list_find_index(combatants_all, e_id); // Remove from speed queue list
                          if (combatant_index != -1) ds_list_delete(combatants_all, combatant_index);
-                         instance_destroy(e); // Destroy instance
+                         instance_destroy(e_id); // Destroy instance
                      }
                  } else {
-                     ds_list_delete(global.battle_enemies, i); // Instance missing, remove from list
-                     // Also ensure removed from combatants_all if somehow missed earlier
-                     var combatant_index = ds_list_find_index(combatants_all, e); // Use the ID even if instance is gone
+                     // Instance missing, remove from list
+                     ds_list_delete(global.battle_enemies, i); 
+                     var combatant_index = ds_list_find_index(combatants_all, e_id); // Use the ID 
                       if (combatant_index != -1) ds_list_delete(combatants_all, combatant_index);
                  }
              }
@@ -350,20 +382,20 @@ switch (global.battle_state) {
          // --- Check for and remove dead party members from active list ---
           if (ds_exists(global.battle_party, ds_type_list)) {
               for (var i = ds_list_size(global.battle_party) - 1; i >= 0; i--) {
-                  var p = global.battle_party[| i];
-                  if (instance_exists(p)) {
-                      if (variable_instance_exists(p, "data") && is_struct(p.data) && variable_struct_exists(p.data, "hp") && p.data.hp <= 0) {
-                           show_debug_message(" -> Party member " + string(p) + " is KO'd.");
-                           var combatant_index = ds_list_find_index(combatants_all, p);
+                  var p_id = global.battle_party[| i]; // Get ID
+                  if (instance_exists(p_id)) {
+                      if (variable_instance_exists(p_id, "data") && is_struct(p_id.data) && variable_struct_exists(p_id.data, "hp") && p_id.data.hp <= 0) {
+                           show_debug_message(" -> Party member " + string(p_id) + " is KO'd.");
+                           var combatant_index = ds_list_find_index(combatants_all, p_id);
                            if (combatant_index != -1) {
                                ds_list_delete(combatants_all, combatant_index);
                                 show_debug_message("   -> Removed from active combatants list.");
                            }
                       }
                   } else {
+                      // Instance missing
                       ds_list_delete(global.battle_party, i); // Remove missing instance from party list
-                      // Also ensure removed from combatants_all
-                      var combatant_index = ds_list_find_index(combatants_all, p);
+                      var combatant_index = ds_list_find_index(combatants_all, p_id); // Use ID
                       if (combatant_index != -1) ds_list_delete(combatants_all, combatant_index);
                   }
               }

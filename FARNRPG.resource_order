@@ -77,6 +77,7 @@
     {"name":"scr_LevelingSystem","order":14,"path":"scripts/scr_LevelingSystem/scr_LevelingSystem.yy",},
     {"name":"scr_load_game","order":9,"path":"scripts/scr_load_game/scr_load_game.yy",},
     {"name":"scr_PerformAttack","order":25,"path":"scripts/scr_PerformAttack/scr_PerformAttack.yy",},
+    {"name":"scr_ProcessDeathIfNecessary","order":31,"path":"scripts/scr_ProcessDeathIfNecessary/scr_ProcessDeathIfNecessary.yy",},
     {"name":"scr_RemoveInventoryItem","order":22,"path":"scripts/scr_RemoveInventoryItem/scr_RemoveInventoryItem.yy",},
     {"name":"scr_save_game","order":8,"path":"scripts/scr_save_game/scr_save_game.yy",},
     {"name":"scr_SpeedQueue","order":30,"path":"scripts/scr_SpeedQueue/scr_SpeedQueue.yy",},
