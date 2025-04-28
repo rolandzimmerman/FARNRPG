@@ -1,73 +1,120 @@
 /// @function scr_EnemyAttackRandom(_enemy_inst)
+/// @description Enemy selects a random living player, attacks them, considering elements and resistances.
+/// @param {Id.Instance} _enemy_inst The enemy instance performing the attack.
+/// @returns {Bool} True if the action sequence should proceed (attack hit, missed, or target invalid).
 function scr_EnemyAttackRandom(_enemy_inst) {
-    // Basic validation
+    // 1. Validate Attacker
     if (!instance_exists(_enemy_inst) || !variable_instance_exists(_enemy_inst, "data") || !is_struct(_enemy_inst.data)) {
-        show_debug_message("Warning [EnemyAI]: Invalid enemy.");
-        return true; // Consume turn even if invalid? Or false? Let's say true.
+        show_debug_message("Warning [EnemyAI]: Invalid enemy instance.");
+        return true; 
     }
     var e_data = _enemy_inst.data;
 
-    // Status check moved to manager, assume we can act if we reach here
+    // 2. Status check (Bind/Shame - Redundant if manager checks, but safe)
+    var status = script_exists(scr_GetStatus) ? scr_GetStatus(_enemy_inst) : undefined;
+    if (is_struct(status)) {
+         if (status.effect == "shame") { show_debug_message(" -> Enemy shamed, skip."); return true; }
+         if (status.effect == "bind" && irandom(99) < 50) { show_debug_message(" -> Enemy bound, skip."); return true; }
+    }
 
-    // Choose random living player
-    var living = [];
+    // 3. Choose random living player target
+    var living_players = [];
     if (ds_exists(global.battle_party, ds_type_list)) {
-        var psz = ds_list_size(global.battle_party);
-        for (var i = 0; i < psz; i++) {
-            var p = global.battle_party[| i];
-            if (instance_exists(p) && variable_instance_exists(p, "data") && is_struct(p.data) && p.data.hp > 0) {
-                array_push(living, p);
+        var party_size = ds_list_size(global.battle_party);
+        for (var i = 0; i < party_size; i++) {
+            var p_inst = global.battle_party[| i];
+            if (instance_exists(p_inst) && variable_instance_exists(p_inst,"data") && is_struct(p_inst.data) && variable_struct_exists(p_inst.data,"hp") && p_inst.data.hp > 0) {
+                array_push(living_players, p_inst);
             }
         }
     }
-    if (array_length(living) == 0) {
-        show_debug_message(" -> Enemy AI: No living targets.");
-        return true; // No one to attack, turn ends
+    if (array_length(living_players) == 0) { show_debug_message(" -> Enemy AI: No living targets."); return true; }
+    var target_inst = living_players[irandom(array_length(living_players)-1)];
+    if (!instance_exists(target_inst) || !variable_instance_exists(target_inst,"data") || !is_struct(target_inst.data) || !variable_struct_exists(target_inst.data,"hp")) { show_debug_message(" -> Enemy AI: Chosen target became invalid."); return true; }
+    var target_data = target_inst.data; 
+    if (target_data.hp <= 0) { show_debug_message(" -> Enemy AI: Target already KO'd."); return true; }
+
+    // 4. Blind Check 
+    if (is_struct(status) && status.effect == "blind" && irandom(99) < 50) {
+        show_debug_message(" -> Enemy attack missed due to Blind!");
+        if (object_exists(obj_popup_damage)) { 
+             var miss_layer_id = layer_get_id("Instances");
+             if(miss_layer_id != -1) {
+                 var miss_pop = instance_create_layer(target_inst.x, target_inst.y - 64, miss_layer_id, obj_popup_damage);
+                 if (miss_pop != noone) miss_pop.damage_amount = "Miss!";
+             }
+        }
+        return true; 
     }
-    var tgt = living[irandom(array_length(living)-1)];
-    if (!instance_exists(tgt) || !variable_instance_exists(tgt, "data")) { // Extra validation on chosen target
-        show_debug_message(" -> Enemy AI: Chosen target invalid.");
-        return true; // Turn ends
+
+    // 5. Get Attack Element 
+    var attack_element = e_data.attack_element ?? "physical"; 
+    show_debug_message("    -> Enemy Attack Element: " + attack_element);
+
+    // 6. Calculate Base Damage 
+    var atk_stat = e_data.atk ?? 1;
+    var def_stat = target_data.def ?? 0;
+    var base_damage = max(1, atk_stat - def_stat); 
+    if (variable_struct_exists(target_data, "is_defending") && target_data.is_defending) { base_damage = max(1, floor(base_damage / 2)); }
+    
+    // 7. Apply Elemental Resistance Multiplier
+    var resistance_multiplier = 1.0;
+    if (script_exists(GetResistanceMultiplier) && variable_struct_exists(target_data, "resistances")) {
+         resistance_multiplier = GetResistanceMultiplier(target_data.resistances, attack_element);
+    } else if (!script_exists(GetResistanceMultiplier)){ show_debug_message("    -> Warning: GetResistanceMultiplier script missing!"); }
+    
+    var final_damage = floor(base_damage * resistance_multiplier);
+    
+    // --- MINIMUM DAMAGE FIX ---
+    if (base_damage >= 1 && resistance_multiplier > 0) { 
+         final_damage = max(1, final_damage); 
+         if (final_damage == 1 && (base_damage * resistance_multiplier) < 1 && resistance_multiplier > 0) { 
+              show_debug_message("    -> Applied Min Damage Rule. Damage forced to: " + string(final_damage));
+         }
+    } else {
+         final_damage = max(0, final_damage); 
     }
-    var td  = tgt.data;
+    // --- END FIX ---
 
-
-    // Blind check
-     var enemy_status = script_exists(scr_GetStatus) ? scr_GetStatus(_enemy_inst) : undefined; // Use GetStatus
-     if (is_struct(enemy_status) && enemy_status.effect == "blind" && irandom(99) < 50) {
-         show_debug_message(" -> Enemy attack missed due to Blind!");
-         if (object_exists(obj_popup_damage)) instance_create_layer(tgt.x, tgt.y - 64, "Instances", obj_popup_damage).damage_amount = "Miss!";
-         return true; // Attack missed, turn consumed
-     }
-
-    // Damage calc
-    var dmg = max(1, (e_data.atk ?? 1) - (td.def ?? 0));
-    if (td.is_defending) dmg = max(1, floor(dmg/2));
-    var before = td.hp;
-    td.hp = max(0, td.hp - dmg);
-    show_debug_message(" -> Enemy dealt " + string(dmg) + " to " + string(tgt) + ". HP: " + string(before) + " -> " + string(td.hp));
+    // 8. Apply Final Damage & Add Logging
+    var old_hp = target_data.hp;
+    show_debug_message("    -> Applying Final Damage: " + string(final_damage) + " to Target HP (Before): " + string(old_hp)); 
+    target_data.hp = max(0, target_data.hp - final_damage); 
+    show_debug_message("    -> Target HP (After): " + string(target_data.hp)); 
+    
+    show_debug_message(" -> Enemy " + string(_enemy_inst) + " dealt " + string(final_damage) + " (" + attack_element + ") to " + string(target_inst) +
+                       ". HP: " + string(old_hp) + " -> " + string(target_data.hp) + 
+                       " (Base:" + string(base_damage) + " * Resist:" + string(resistance_multiplier) + ")");
+                       
+    // 9. Damage Popup 
+    var popup_text = string(final_damage);
+    var popup_color = c_white;
+    if (resistance_multiplier <= 0) { popup_text = "Immune"; popup_color = c_gray; } 
+    else if (resistance_multiplier < 0.9) { popup_text += " (Resist)"; popup_color = c_aqua; }
+    else if (resistance_multiplier > 1.1) { popup_text += " (Weak!)"; popup_color = c_yellow; }
     if (object_exists(obj_popup_damage)) {
-        var pop = instance_create_layer(tgt.x, tgt.y - 64, "Instances", obj_popup_damage);
-        if (pop != noone) pop.damage_amount = string(dmg);
-    }
-    if (td.is_defending) td.is_defending = false; // Clear target's defend state
-
-    // +3 Overdrive for THAT player
-    if (variable_struct_exists(td, "overdrive")) {
-        td.overdrive = min(td.overdrive + 3, td.overdrive_max);
-        show_debug_message(" -> " + string(tgt) + " OD = " + string(td.overdrive));
+        var popup_layer_id = layer_get_id("Instances");
+        if (popup_layer_id != -1) {
+            var pop = instance_create_layer(target_inst.x, target_inst.y - 64, popup_layer_id, obj_popup_damage);
+            if (pop != noone) { pop.damage_amount = popup_text; pop.text_color = popup_color; }
+        } else { show_debug_message("ERROR: Cannot create popup, layer 'Instances' missing."); }
     }
     
-    // IMMEDIATE DEATH CHECK (on the player target)
-    if (script_exists(scr_ProcessDeathIfNecessary)) {
-         // We usually don't 'process death' for players this way (they stay KO'd)
-         // But we might check if the attack caused defeat
-         // scr_ProcessDeathIfNecessary(tgt); 
-         // Let's skip immediate player removal, check_win_loss handles defeat condition.
-         if (td.hp <= 0) {
-              show_debug_message(" -> Player " + string(tgt) + " was KO'd by enemy attack.");
-         }
-    }
+    // 10. Clear Target Defend State
+    if (variable_struct_exists(target_data, "is_defending")) target_data.is_defending = false;
 
-    return true; // Attack completed, turn consumed
+    // 11. Overdrive Gain for Target
+    if (variable_struct_exists(target_data, "overdrive") && variable_struct_exists(target_data,"overdrive_max")) {
+        target_data.overdrive = min(target_data.overdrive + 3, target_data.overdrive_max); 
+        show_debug_message("    -> Target Overdrive: " + string(target_data.overdrive));
+     }
+
+    // 12. IMMEDIATE DEATH CHECK (for Player)
+    if (target_data.hp <= 0) {
+        show_debug_message(" -> Player " + string(target_inst) + " was KO'd by enemy attack.");
+    }
+    
+    show_debug_message("--- scr_EnemyAttackRandom END ---"); 
+
+    return true; // Indicate action was processed
 }

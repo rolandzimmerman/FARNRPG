@@ -1,7 +1,7 @@
 /// @function scr_FetchCharacterInfo(_char_key)
-/// @description Safely retrieves the base data struct for a given character key using manual copy.
+/// @description Safely retrieves a DEEP COPY of the base data struct for a given character key.
 /// @param {string} _char_key The unique key of the character (e.g., "hero", "claude").
-/// @returns {Struct} A *copy* of the character data struct, or undefined if not found.
+/// @returns {Struct} A *deep copy* of the character data struct, or undefined if not found or invalid.
 function scr_FetchCharacterInfo(_char_key) {
     // ✅ Corrected global name
     if (!variable_global_exists("character_data") || !ds_exists(global.character_data, ds_type_map)) {
@@ -12,27 +12,26 @@ function scr_FetchCharacterInfo(_char_key) {
     var _original_data = ds_map_find_value(global.character_data, _char_key);
 
     if (is_undefined(_original_data)) {
-        show_debug_message("⚠️ WARNING: Character key '" + string(_char_key) + "' not found in global.character_data");
+        show_debug_message("⚠️ WARNING [scr_FetchCharacterInfo]: Character key '" + string(_char_key) + "' not found in global.character_data");
         return undefined;
     }
 
     if (!is_struct(_original_data)) {
-        show_debug_message("❌ ERROR: Data for key '" + string(_char_key) + "' is not a struct!");
+        show_debug_message("❌ ERROR [scr_FetchCharacterInfo]: Data for key '" + string(_char_key) + "' is not a struct!");
         return undefined;
     }
 
-    // Manual deep copy
-    show_debug_message("🔍 Copying struct for key: " + _char_key);
-    var _copy_data = {};
-    var _variable_names = variable_struct_get_names(_original_data);
-    var _num_vars = array_length(_variable_names);
+    // --- Use variable_clone for a proper deep copy ---
+    show_debug_message("🔍 Deep cloning struct for key: " + _char_key);
+    var _copy_data = variable_clone(_original_data, true); 
+    // --- End deep copy ---
 
-    for (var i = 0; i < _num_vars; i++) {
-        var _name = _variable_names[i];
-        var _value = variable_struct_get(_original_data, _name);
-        variable_struct_set(_copy_data, _name, _value);
+    // Optional: Check if clone was successful (variable_clone returns undefined on failure)
+    if (is_undefined(_copy_data)) {
+         show_debug_message("❌ ERROR [scr_FetchCharacterInfo]: variable_clone failed for key: " + string(_char_key));
+         return undefined;
     }
 
-    show_debug_message("✅ Manual struct copy complete for " + _char_key);
-    return _copy_data;
+    show_debug_message("✅ Deep clone complete for " + _char_key);
+    return _copy_data; // Return the independent deep copy
 }

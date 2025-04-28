@@ -1,36 +1,26 @@
-/// obj_battle_enemy :: Create Event
+/// obj_battle_enemy :: Create Event (Example Parent)
+// Initializes variables that DO NOT depend on the 'data' struct.
+// 'data' struct and data-dependent variables (sprite, stats, fx) are assigned
+// by obj_battle_manager AFTER this event runs.
 
-// Log creation with instance ID
-// Note: 'data' is assigned AFTER Create by obj_battle_manager, so it won't exist here yet.
-// We should check for data in events that run later, like Step or Draw.
-show_debug_message("Enemy Create: Instance ID " + string(id) + " at (" + string(x) + "," + string(y) + ")");
+show_debug_message("--- Enemy Parent Create Start (Instance: " + string(id) + ", Object: " + object_get_name(object_index) + ") ---");
 
-// Initialize basic properties if needed, but sprite/stats depend on 'data'
-sprite_index = -1; // Default to no sprite initially
-image_speed = 0;
-visible = true; // Assume visible unless data says otherwise later? Or set in manager.
+// Initialize turn counter (manager calculates actual value later)
+turnCounter = 0; 
 
-/// obj_battle_enemy :: Create Event (Example)
-// Initializes base enemy stats. Status effects are now handled globally.
+// Initialize Combat State Machine variables
+combat_state = "idle"; 
+origin_x = x; // Store initial position
+origin_y = y;
+target_for_attack = noone; 
+attack_fx_sprite = spr_pow;  // Default, manager might override based on data
+attack_fx_sound = snd_punch; // Default, manager might override based on data
+attack_animation_finished = false; 
 
-// event_inherited(); // Inherit if using parent
+// **REMOVED from here:** Code accessing 'data' like:
+// sprite_index = data.sprite_index ?? -1; 
+// image_speed = ...
+// attack_fx_sprite = data.attack_sprite ?? spr_pow; 
+// attack_fx_sound = data.attack_sound ?? snd_punch; 
 
-show_debug_message("--- Enemy Create Start (Instance: " + string(id) + ", Object: " + object_get_name(object_index) + ") ---");
-
-// Get stats
-if (script_exists(scr_GetEnemyDataFromName)) {
-    data = scr_GetEnemyDataFromName(object_index);
-     if (!is_struct(data)) {
-         show_debug_message("!!! CRITICAL ERROR: Failed to get enemy data for " + object_get_name(object_index) + " !!!");
-         data = { name: "ERR_ENEMY", hp: 1, maxhp: 1, atk: 1, def: 1, xp_value: 0 }; // Minimal fallback data
-     }
-} else {
-     show_debug_message("!!! CRITICAL ERROR: scr_GetEnemyDataFromName missing !!!");
-      data = { name: "ERR_ENEMY", hp: 1, maxhp: 1, atk: 1, def: 1, xp_value: 0 };
-}
-
-// status_effect   = "none"; // REMOVED Instance Variable
-// status_duration = 0;      // REMOVED Instance Variable
-
-// Set sprite based on data if needed
-// sprite_index = data.sprite ?? spr_enemy_default;
+// Add any other non-data-dependent initializations here.

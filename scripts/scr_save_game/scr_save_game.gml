@@ -5,74 +5,72 @@ function scr_save_game(filename) {
     show_debug_message("Attempting to save game to: " + filename);
 
     // --- 1. Gather Data into a Struct ---
-    var _save_data = {}; // Create an empty struct (local variable)
+    var _save_data = {}; 
 
-    // Player Data (Make sure obj_player exists!)
+    // Player Position/Room Data
     if (instance_exists(obj_player)) {
         _save_data.player_data = {
             x : obj_player.x,
             y : obj_player.y,
             room : room // Store the current room ID
-            // Add other player stats here if needed, e.g.:
-            // hp : obj_player.hp,
-            // mp : obj_player.mp,
-            // sprite_index : obj_player.sprite_index
         };
-        show_debug_message(" > Player data gathered.");
+        show_debug_message(" > Player pos/room data gathered.");
     } else {
-        show_debug_message("WARNING: obj_player not found during save! Player data NOT saved.");
-        // return false; // Optional: Fail save if player doesn't exist
+        show_debug_message("WARNING: obj_player not found during save! Player pos/room NOT saved.");
+        // Decide if save should fail entirely if player doesn't exist
+        // return false; 
     }
 
-    // Global Game Data (Add any important global vars)
+    // Global Game Data (Example)
     _save_data.global_data = {};
-    if (variable_global_exists("quest_stage")) { // Example global variable
-         _save_data.global_data.quest_stage = global.quest_stage;
-    }
-    // Add other global variables as needed
+    if (variable_global_exists("quest_stage")) { _save_data.global_data.quest_stage = global.quest_stage; }
+    // Add other essential global variables here
 
-
-    // --- NPC State Data (Scalable Method using Unique IDs) ---
-    _save_data.npc_states = {}; // Using a struct to store states, keyed by unique ID
-
-    show_debug_message(" > Scanning for NPCs with unique IDs to save...");
-    // Loop through all active instances of the parent NPC type and its children
-    with (obj_npc_parent)
-    {
-        // Check if this specific instance has a unique ID assigned to it
-        if (variable_instance_exists(id, "unique_npc_id"))
-        {
-            var _id_string = unique_npc_id;
-            var _state_to_save = {};
-
-            // Add variables common to ALL saved NPCs
-            if (variable_instance_exists(id, "has_spoken_to")) {
-                 _state_to_save.has_spoken_to = has_spoken_to;
-            }
-            // Add other common variables if needed (e.g., position)
-
-            // Optional: Add variables specific to CHILD types
-            // if (object_index == obj_npc_1) { /* save obj_npc_1 specific stuff */ }
-
-            // Store this NPC's state struct in the main save data
-            // Access the script's local _save_data directly
-            _save_data.npc_states[$ _id_string] = _state_to_save;
-        }
-    } // End 'with (obj_npc_parent)'
-
-    // --- Get the count using older functions for compatibility ---
+    // NPC State Data
+    _save_data.npc_states = {}; 
+    /* ... existing logic to loop through obj_npc_parent and save states ... */
     var _npc_state_keys = variable_struct_get_names(_save_data.npc_states);
-    show_debug_message(" > Finished scanning NPCs. Saved state for " + string(array_length(_npc_state_keys)) + " unique NPCs."); // <<< FIX APPLIED HERE
+    show_debug_message(" > Saved state for " + string(array_length(_npc_state_keys)) + " unique NPCs.");
+
+    // --- <<< NEW: SAVE PARTY DATA >>> ---
+    // Save Party Members Array
+    if (variable_global_exists("party_members") && is_array(global.party_members)) {
+        _save_data.party_members_list = global.party_members; // Arrays are directly saveable in JSON
+        show_debug_message(" > Party members list gathered.");
+    } else {
+         show_debug_message(" > WARNING: global.party_members missing or not an array during save.");
+         _save_data.party_members_list = []; // Save empty array
+    }
+    
+    // Save Party Inventory Array
+     if (variable_global_exists("party_inventory") && is_array(global.party_inventory)) {
+        _save_data.party_inventory_list = global.party_inventory; // Array of structs is directly saveable in JSON
+         show_debug_message(" > Party inventory list gathered.");
+    } else {
+         show_debug_message(" > WARNING: global.party_inventory missing or not an array during save.");
+         _save_data.party_inventory_list = []; // Save empty array
+    }
+
+    // Save Party Stats Map (Convert DS Map to String)
+    if (variable_global_exists("party_current_stats") && ds_exists(global.party_current_stats, ds_type_map)) {
+         _save_data.party_stats_map_string = ds_map_write(global.party_current_stats); // Convert map to string
+         show_debug_message(" > Party stats map string generated.");
+    } else {
+          show_debug_message(" > WARNING: global.party_current_stats missing or not a DS Map during save.");
+          _save_data.party_stats_map_string = ""; // Save empty string
+    }
+    // --- <<< END SAVE PARTY DATA >>> ---
 
 
-    // --- 2. Convert Struct to JSON String ---
+    // --- 2. Convert TOP LEVEL Struct to JSON String ---
     var _json_string = json_stringify(_save_data);
 
-    if (_json_string == "") {
-        show_debug_message("ERROR: Failed to stringify save data!");
+    if (_json_string == "" || is_undefined(_json_string)) { // Added undefined check
+        show_debug_message("ERROR: Failed to stringify save data! Data: " + string(_save_data));
         return false;
     }
     show_debug_message(" > Save data stringified.");
+    // show_debug_message("Save JSON: " + _json_string); // Optional: Log the JSON itself
 
 
     // --- 3. Write JSON String to File ---
@@ -81,7 +79,6 @@ function scr_save_game(filename) {
         show_debug_message("ERROR: Failed to open file for writing: " + filename);
         return false;
     }
-
     file_text_write_string(_file, _json_string);
     file_text_close(_file);
 

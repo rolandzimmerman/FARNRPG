@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"scr_GetWeaponAttackFX",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"scr_GetWeaponAttackFX",
+  "parent":{
+    "name":"Scripts",
+    "path":"folders/Scripts.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}
