@@ -271,7 +271,7 @@ switch (combat_state) {
         // Calculate target position 
         var _target_x = origin_x; var _target_y = origin_y; 
         if (instance_exists(target_for_attack)) { _target_x = target_for_attack.x; _target_y = target_for_attack.y; }
-        var _offset_dist = 40; var _dir_to_target = point_direction(x, y, _target_x, _target_y);
+        var _offset_dist = 192; var _dir_to_target = point_direction(x, y, _target_x, _target_y);
         var _move_to_x = _target_x - lengthdir_x(_offset_dist, _dir_to_target);
         var _move_to_y = _target_y - lengthdir_y(_offset_dist, _dir_to_target);
         
