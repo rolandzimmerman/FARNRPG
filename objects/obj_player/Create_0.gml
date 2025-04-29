@@ -1,73 +1,69 @@
 /// obj_player :: Create Event
 /// Initializes player control, sprite, and ensures persistent data exists in global map ONLY for a new game.
 
-persistent = true; // keep the player instance alive across rooms
+persistent = true; 
 
 show_debug_message("--- obj_player Create Event RUNNING (Instance ID: " + string(id) + ") ---");
 
-// Movement & world setup (Instance variables)
+// Movement & world setup
 move_speed = 2;
 tilemap    = layer_tilemap_get_id(layer_get_id("Tiles_Col")); 
 if (tilemap == -1) { show_debug_message("Warning [obj_player Create]: Collision layer 'Tiles_Col' not found!"); }
 if (script_exists(scr_InitRoomMap)) scr_InitRoomMap(); 
 
 // --- Ensure Persistent Data Structures & Initialize Hero ONLY ONCE per Game Start ---
-// This block uses a flag on the INSTANCE to ensure it only runs once for this specific persistent player object.
 if (!variable_instance_exists(id, "persistent_data_initialized")) {
     persistent_data_initialized = true; 
     show_debug_message("!!! obj_player CREATE: First Time Instance Initialization !!!");
 
     var _hero_key = "hero"; 
 
-    // --- Add hero to global party list if needed ---
+    // Add hero to global party list if needed 
     if (variable_global_exists("party_members") && is_array(global.party_members)) {
         if (array_get_index(global.party_members, _hero_key) == -1) { array_push(global.party_members, _hero_key); show_debug_message("  -> Added '" + _hero_key + "' to global.party_members."); }
     } else { show_debug_message("ERROR: global.party_members missing or not array in obj_player Create. Initializing."); global.party_members = [_hero_key]; }
 
-    // --- Ensure global.party_current_stats map exists ---
+    // Ensure global.party_current_stats map exists 
     if (!variable_global_exists("party_current_stats") || !ds_exists(global.party_current_stats, ds_type_map)) {
         show_debug_message("WARNING: obj_player Create creating global.party_current_stats map.");
         global.party_current_stats = ds_map_create();
     }
 
-    // --- Initialize "hero" stats in the map ONLY if starting a New Game ---
-    // Assumes a global flag global.start_as_new_game is set by title screen/init object
+    // Initialize "hero" stats in the map ONLY if starting a New Game 
     var _is_new_game = (variable_global_exists("start_as_new_game")) ? global.start_as_new_game : true; 
 
     if (_is_new_game) {
         show_debug_message(" -> New Game Detected by Player Create.");
-        // Only add default hero stats IF they aren't already in the map
         if (ds_exists(global.party_current_stats, ds_type_map) && !ds_map_exists(global.party_current_stats, _hero_key)) {
             show_debug_message(" -> Initializing NEW GAME '" + _hero_key + "' data in global.party_current_stats.");
             
-            // Fetch base data 
+            // Fetch base data using the (now verified/created) fetch script
             var _base_data = script_exists(scr_FetchCharacterInfo) ? scr_FetchCharacterInfo(_hero_key) : undefined; 
             
-            // --- Corrected Fallback Data (Includes proper HP/MP/Max values) ---
+            // --- Fallback Data (Includes class) ---
             if (!is_struct(_base_data)) {
                 show_debug_message("CRITICAL ERROR: Could not fetch base data for '" + _hero_key + "'! Using fallback.");
                 _base_data = { 
-                    name:"Hero", class:"Hero", 
-                    hp: 40, maxhp: 40, // <<< Corrected Fallback HP
-                    mp: 20, maxmp: 20, // <<< Corrected Fallback MP
+                    name:"Hero", class:"Hero", // <<< Default class included
+                    hp: 40, maxhp: 40, mp: 20, maxmp: 20, 
                     atk: 10, def: 5, matk: 8, mdef: 4, spd: 7, luk: 5, 
                     level: 1, xp: 0, xp_require: 100, 
                     overdrive: 0, overdrive_max: 100, 
                     skills:[], equipment: { weapon:noone, offhand:noone, armor:noone, helm:noone, accessory:noone }, 
-                    resistances: { physical: 0 }, // Simplified fallback resist
+                    resistances: { physical: 0 }, 
                     character_key: _hero_key
                 };
             }
-            // --- End Corrected Fallback ---
+            // --- End Fallback ---
 
-            // Create initial persistent struct (Level 1) - Safely access fields
+            // Create initial persistent struct - Safely access fields from _base_data
             var _xp_req = (script_exists(scr_GetXPForLevel)) ? scr_GetXPForLevel(2) : 100;
             var _skills_arr = variable_struct_exists(_base_data, "skills") && is_array(_base_data.skills) ? variable_clone(_base_data.skills, true) : [];
             var _equip_struct = variable_struct_exists(_base_data, "equipment") && is_struct(_base_data.equipment) ? variable_clone(_base_data.equipment, true) : { weapon: noone, offhand: noone, armor: noone, helm: noone, accessory: noone };
             var _resists_struct = variable_struct_exists(_base_data, "resistances") && is_struct(_base_data.resistances) ? variable_clone(_base_data.resistances, true) : { physical: 0, fire: 0, ice: 0, lightning: 0, poison: 0, holy: 0, dark: 0 };
 
             var _initial_hero_stats = {
-                maxhp:      variable_struct_get(_base_data, "maxhp") ?? 40, // Use better defaults based on template
+                maxhp:      variable_struct_get(_base_data, "maxhp") ?? 40, 
                 maxmp:      variable_struct_get(_base_data, "maxmp") ?? 20,
                 atk:        variable_struct_get(_base_data, "atk") ?? 10,    
                 def:        variable_struct_get(_base_data, "def") ?? 5,
@@ -84,10 +80,11 @@ if (!variable_instance_exists(id, "persistent_data_initialized")) {
                 overdrive:  variable_struct_get(_base_data, "overdrive") ?? 0, 
                 overdrive_max: variable_struct_get(_base_data, "overdrive_max") ?? 100,
                 name:       variable_struct_get(_base_data, "name") ?? "Hero",
+                class:      variable_struct_get(_base_data, "class") ?? "Adventurer", // <<< Safely get class
                 character_key: _hero_key
             };
-            _initial_hero_stats.hp = _initial_hero_stats.maxhp; // Set current HP to calculated max
-            _initial_hero_stats.mp = _initial_hero_stats.maxmp; // Set current MP to calculated max
+            _initial_hero_stats.hp = _initial_hero_stats.maxhp; 
+            _initial_hero_stats.mp = _initial_hero_stats.maxmp; 
 
             ds_map_add(global.party_current_stats, _hero_key, _initial_hero_stats);
             show_debug_message(" -> Finished initializing NEW GAME '" + _hero_key + "' map entry.");
@@ -108,9 +105,8 @@ if (!variable_instance_exists(id, "persistent_data_initialized")) {
 
 
 // --- Initialize non-persistent battle state vars ---
-// These are for the battle instance, not the persistent player object
-// Remove these from obj_player create - they belong in obj_battle_player create
-/* combat_state = "idle"; 
+// These are reset when this instance is used in battle by the manager
+combat_state = "idle"; 
 origin_x = x; origin_y = y;
 target_for_attack = noone; 
 attack_fx_sprite = spr_pow; 
@@ -119,7 +115,6 @@ attack_animation_finished = false;
 stored_action_for_anim = undefined; 
 sprite_assigned = false; 
 turnCounter = 0; 
-*/
 
 // --- Overworld specific variables ---
 // (Keep any other necessary instance variables for the overworld player here)
