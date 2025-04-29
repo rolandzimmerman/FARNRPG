@@ -155,6 +155,88 @@ switch (global.battle_state) {
          }
     }
     break; // End TargetSelect
+    
+        // --- <<< ADDED STATE: TargetSelectAlly >>> ---
+    case "TargetSelectAlly":
+    {
+         show_debug_message("Manager Step: In TargetSelectAlly State"); 
+         // Basic validation
+         if (!instance_exists(currentActor) || stored_action_data == undefined) { show_debug_message("TargetSelectAlly: Actor/Action invalid."); global.battle_state = "calculate_turn"; break; }
+         if (variable_instance_exists(currentActor,"data") && currentActor.data.hp <= 0) { show_debug_message("TargetSelectAlly: Actor KO'd."); global.battle_state = "action_complete"; break; }
+         if (!ds_exists(global.battle_party, ds_type_list) || ds_list_empty(global.battle_party)) { show_debug_message("TargetSelectAlly: Party list invalid."); global.battle_state = "player_input"; break; } 
+        
+         var _party_count = ds_list_size(global.battle_party);
+         // Initialize target index if needed
+         if (!variable_global_exists("battle_ally_target")) global.battle_ally_target = global.active_party_member_index ?? 0; 
+         // Ensure index is valid even if party size changed somehow
+         global.battle_ally_target = clamp(global.battle_ally_target, 0, max(0, _party_count - 1));
+
+         var P = 0; 
+         var _up = keyboard_check_pressed(vk_up) || gamepad_button_check_pressed(P, gp_padu);
+         var _down = keyboard_check_pressed(vk_down) || gamepad_button_check_pressed(P, gp_padd);
+         var _conf = keyboard_check_pressed(vk_enter) || keyboard_check_pressed(vk_space) || gamepad_button_check_pressed(P, gp_face1);
+         var _cancel = keyboard_check_pressed(vk_escape)|| gamepad_button_check_pressed(P, gp_face2); 
+
+         // --- Handle Cursor Movement (Ally List) ---
+          if (_up || _down) {
+            var _current_target_index = global.battle_ally_target; 
+            var _new_target_index = _current_target_index;
+            var _dir = _up ? -1 : 1;
+            var _attempts = 0; // Prevent infinite loops if all allies are invalid targets
+            repeat(_party_count) { 
+                _new_target_index = (_current_target_index + (_dir * (_attempts + 1)) + _party_count) mod _party_count; 
+                 var _check_inst = global.battle_party[| _new_target_index];
+                 
+                 // Basic check: Can we target this instance? (Exists?)
+                 var _can_target_this_ally = instance_exists(_check_inst); 
+                 
+                 // Add skill-specific checks if needed (e.g., only alive targets for Heal)
+                 if (_can_target_this_ally && is_struct(stored_action_data)) {
+                      if (stored_action_data.effect == "heal_hp" && (!variable_instance_exists(_check_inst,"data") || _check_inst.data.hp <= 0) ) {
+                           _can_target_this_ally = false; // Can't heal dead/invalid
+                      }
+                      // Add future checks for revive (target dead) or other conditions here
+                 } else if (!_can_target_this_ally) { /* Already know we can't target */ }
+
+                 if (_can_target_this_ally) break; // Found valid target
+                 
+                 _attempts++;
+                 if (_attempts >= _party_count) { _new_target_index = _current_target_index; break;} // No other valid target found
+            }
+            global.battle_ally_target = _new_target_index; 
+            show_debug_message(" -> TargetSelectAlly: Moved cursor to party index " + string(global.battle_ally_target));
+         }
+         // --- Handle Confirmation ---
+         else if (_conf) {
+            show_debug_message(" -> TargetSelectAlly: Input CONFIRM detected.");
+            if (global.battle_ally_target >= 0 && global.battle_ally_target < _party_count) {
+                var potential_target_id = ds_list_find_value(global.battle_party, global.battle_ally_target); 
+                // Re-validate target before confirming
+                 var _can_target_this_ally = instance_exists(potential_target_id);
+                 if (_can_target_this_ally && is_struct(stored_action_data)) {
+                     if (stored_action_data.effect == "heal_hp" && (!variable_instance_exists(potential_target_id,"data") || potential_target_id.data.hp <= 0)) { _can_target_this_ally = false;}
+                     // Add other validation checks here
+                 } else if (!_can_target_this_ally) { /* Invalid */ }
+
+                if (_can_target_this_ally) { 
+                    selected_target_id = potential_target_id; 
+                    show_debug_message("    -> Ally target confirmed: " + string(selected_target_id) + ". Setting state to ExecutingAction.");
+                    global.battle_state = "ExecutingAction"; 
+                } else { show_debug_message("    -> Selected ally is not a valid target for this skill."); /* Play fail sound? */ }
+            } else { show_debug_message("    -> Invalid ally target index."); selected_target_id = noone; }
+         } 
+         // --- Handle Cancellation ---
+         else if (_cancel) { 
+            show_debug_message(" -> TargetSelectAlly: Input CANCEL detected.");
+            global.battle_state = "skill_select"; // Go back to skill selection
+            stored_action_data = undefined; // Clear stored skill
+            selected_target_id = noone;
+            // global.battle_ally_target = 0; // Optionally reset cursor
+            show_debug_message("    -> Reset state to skill_select.");
+         }
+    }
+    break; // End TargetSelectAlly
+    // --- <<< END ADDED STATE >>> ---
 
     case "ExecutingAction": // Initiates Player Action Animation
          show_debug_message("Manager: State ExecutingAction -> Setting up Action Animation for Actor: " + string(currentActor));

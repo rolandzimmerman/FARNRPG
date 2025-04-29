@@ -20,11 +20,11 @@ sprite_assigned = false;
 idle_sprite = sprite_index; 
 attack_sprite_asset = -1;   
 sprite_before_attack = sprite_index; 
+original_scale = 1.0; // <<< ADDED: Store the original scale factor
 
 // --- Attack Animation Speed ---
-// <<< INCREASED SPEED - Adjust to your preference >>>
-attack_anim_speed = 1.25; // Example: Play at 50% speed. '1' is normal speed. 
-// <<< END ADJUSTMENT >>>
+attack_anim_speed = 0.5; 
+show_debug_message(" -> Player Create: attack_anim_speed initialized to: " + string(attack_anim_speed));
 
 // --- Movement Animation (Not used) ---
 target_move_x = x;          

@@ -1,118 +1,130 @@
 /// obj_battle_enemy :: Step Event (Example Parent)
 // Handles combat animation state machine.
 
-// Update origin while idle
+// Update origin AND original scale while idle
 if (combat_state == "idle") {
-     origin_x = x;
-     origin_y = y;
+    origin_x = x;
+    origin_y = y;
+    // <<< MODIFICATION: Store original scale reliably >>>
+    // Check if variable exists first time, otherwise just update
+    if (!variable_instance_exists(id,"original_scale")) { 
+         original_scale = image_xscale; 
+    } else {
+         original_scale = image_xscale; 
+    }
+    // Also ensure scale IS original if we enter idle state
+    if (image_xscale != original_scale) {
+        image_xscale = original_scale;
+        image_yscale = original_scale; // Assuming uniform scale
+    }
+    // <<< END MODIFICATION >>>
 }
 
 // --- Combat Animation State Machine ---
 switch (combat_state) {
     case "idle":
         // Wait for the battle manager to set state to "attack_start"
+        // Ensure animation stopped
+         if (image_speed != 0) image_speed = 0; 
         break;
 
     case "attack_start": 
         show_debug_message(object_get_name(object_index) + " " + string(id) + ": State -> attack_start, Target: " + string(target_for_attack)); 
         origin_x = x; origin_y = y; 
+        // Store original scale again just in case it wasn't set in idle (e.g., first frame)
+        if (!variable_instance_exists(id,"original_scale")) original_scale = image_xscale; 
 
-        show_debug_message("ENEMY_STEP: " + string(id) + ": Log 2 - Triggering Screen Flash..."); 
-        if (script_exists(scr_TriggerScreenFlash)) { scr_TriggerScreenFlash(15, 0.7); }
+        // (Optional: Trigger screen flash)
+        // if (script_exists(scr_TriggerScreenFlash)) { scr_TriggerScreenFlash(15, 0.7); }
 
         // Calculate position near target
-        show_debug_message("ENEMY_STEP: " + string(id) + ": Log 3 - Calculating position..."); 
         var _target_x = origin_x; var _target_y = origin_y; 
-        if (instance_exists(target_for_attack)) { _target_x = target_for_attack.x; _target_y = target_for_attack.y; } else { show_debug_message(" -> WARN: Target invalid during position calc!") }
+        var target_exists = instance_exists(target_for_attack); 
+        if (target_exists) { _target_x = target_for_attack.x; _target_y = target_for_attack.y; } 
         var _offset_dist = 192; 
         var _dir_to_target = point_direction(x, y, _target_x, _target_y);
         var _move_to_x = _target_x - lengthdir_x(_offset_dist, _dir_to_target); 
         var _move_to_y = _target_y - lengthdir_y(_offset_dist, _dir_to_target); 
-        show_debug_message("ENEMY_STEP: " + string(id) + ": Log 4 - Calculated MoveTo: (" + string(_move_to_x) + "," + string(_move_to_y) + ")"); 
         
+        // <<< MODIFICATION: Match Target Scale Safely >>>
+        if (target_exists) {
+             // Read target scale safely, default to 1 if variables missing
+             var _target_scale_x = variable_instance_get(target_for_attack, "image_xscale") ?? 1; 
+             var _target_scale_y = variable_instance_get(target_for_attack, "image_yscale") ?? 1; 
+             image_xscale = _target_scale_x;
+             image_yscale = _target_scale_y;
+             show_debug_message("    -> Matched enemy scale to target scale: " + string(image_xscale));
+        }
+        // <<< END MODIFICATION >>>
+
         // Apply teleport
-        show_debug_message("ENEMY_STEP: " + string(id) + ": Log 5 - Applying position..."); 
         x = _move_to_x; 
         y = _move_to_y; 
-        show_debug_message("ENEMY_STEP: " + string(id) + ": Log 6 - Applied position successfully."); 
+        
+        // Play Sound (Use sound determined by manager/AI)
+         var _sound_to_play = variable_instance_get(id,"current_attack_fx_sound") ?? snd_punch; // Get sound set by manager
+        if (audio_exists(_sound_to_play)) { audio_play_sound(_sound_to_play, 10, false); } 
+        else { show_debug_message(" -> Warning: Enemy attack sound missing: " + string(_sound_to_play)); }
 
-        // Play Sound
-        show_debug_message("ENEMY_STEP: " + string(id) + ": Log 7 - Playing sound: " + string(attack_fx_sound)); 
-        if (audio_exists(attack_fx_sound)) { audio_play_sound(attack_fx_sound, 10, false); } 
-        else { show_debug_message(" -> Warning: Enemy attack sound missing: " + string(attack_fx_sound)); }
-
-        // Apply Damage & Effects by calling the integrated enemy AI script
-        show_debug_message("ENEMY_STEP: " + string(id) + ": Log 8 - Applying Damage/Effects via scr_EnemyAttackRandom..."); 
+        // Apply Damage & Effects (using AI script)
         var _action_succeeded = false; 
-        // ======================= FIX IS HERE =======================
-        // Call the script that contains the AI, target selection, and damage logic
         if (script_exists(scr_EnemyAttackRandom)) { 
-             show_debug_message(" -> Calling scr_EnemyAttackRandom..."); // Log before calling
-             // scr_EnemyAttackRandom handles everything including target selection and damage application
-             _action_succeeded = scr_EnemyAttackRandom(id); // Pass self ID
-             show_debug_message(" -> Called scr_EnemyAttackRandom. Result: " + string(_action_succeeded)); // Log after calling
-        } else { 
-            show_debug_message(" -> ERROR: scr_EnemyAttackRandom missing! Cannot perform enemy action."); 
-             _action_succeeded = false; // Mark as failed if script missing
-        }
-        // ===========================================================
-        show_debug_message("ENEMY_STEP: " + string(id) + ": Log 10 - Damage/Effect application attempt complete. Succeeded: " + string(_action_succeeded)); 
+             // Assuming scr_EnemyAttackRandom USES the target already set in this instance (target_for_attack)
+             _action_succeeded = scr_EnemyAttackRandom(id); 
+        } else { _action_succeeded = false; }
         
         // Create Visual Effect
-        show_debug_message("ENEMY_STEP: " + string(id) + ": Log 11 - Creating Visual Effect..."); 
-        if (_action_succeeded) { // Create FX even on miss (where script returns true)
-             if (object_exists(obj_attack_visual) && instance_exists(target_for_attack)) { // Still need target_for_attack for FX position
-                 var _fx_x = target_for_attack.x; var _fx_y = target_for_attack.y - 32; 
-                 var _layer_id = layer_get_id("Instances"); 
-                 if (_layer_id != -1) { 
-                     show_debug_message("   -> Attempting instance_create_layer for obj_attack_visual..."); 
-                     var fx = instance_create_layer(_fx_x, _fx_y, _layer_id, obj_attack_visual); 
-                     if (instance_exists(fx)) {
-                          show_debug_message("   -> obj_attack_visual Instance ID: " + string(fx)); 
-                          if (sprite_exists(attack_fx_sprite)) { fx.sprite_index = attack_fx_sprite; } 
-                          else { fx.sprite_index = spr_pow; } 
-                          fx.owner_instance = id; 
-                          attack_animation_finished = false; 
-                          show_debug_message("   -> Created obj_attack_visual successfully on layer: Instances"); // Log 12
-                     } else { show_debug_message("   -> ERROR: Failed to create obj_attack_visual!"); attack_animation_finished = true; }
-                 } else { show_debug_message("   -> ERROR: Layer 'Instances' not found for obj_attack_visual!"); attack_animation_finished = true; }
-             } else { show_debug_message("   -> Warning: obj_attack_visual missing or target invalid. Skipping visual."); attack_animation_finished = true; }
-        } else { 
-             show_debug_message(" -> Skipping visual effect creation because action failed before starting.");
-             attack_animation_finished = true; 
-        }
+        if (_action_succeeded && instance_exists(target_for_attack)) { 
+             if (object_exists(obj_attack_visual)) {
+                var _fx_x = target_for_attack.x; var _fx_y = target_for_attack.y - 32; 
+                // --- Create FX back on "Instances" Layer ---
+                var _layer_id = layer_get_id("Instances"); 
 
-        show_debug_message("ENEMY_STEP: " + string(id) + ": Log 13 - Setting combat_state to attack_waiting."); 
+                if (_layer_id != -1) { 
+                    var fx = instance_create_layer(_fx_x, _fx_y, _layer_id, obj_attack_visual); 
+                    if (instance_exists(fx)) {
+                         var _sprite_to_use = variable_instance_get(id,"current_attack_fx_sprite") ?? spr_pow; 
+                         if (sprite_exists(_sprite_to_use)) { fx.sprite_index = _sprite_to_use; } 
+                         else { fx.sprite_index = spr_pow; } 
+                         
+                         // --- <<< MODIFICATION: Set FX Depth relative to TARGET >>> ---
+                         // This ensures the effect draws over the instance being hit
+                         fx.depth = target_for_attack.depth - 1; 
+                         fx.image_speed = 1; // Ensure FX animates
+                         show_debug_message("    -> Set FX ("+string(fx)+") depth: " + string(fx.depth) + " (Target depth was: " + string(target_for_attack.depth) + ")");
+                         // --- <<< END MODIFICATION >>> ---
+
+                         fx.owner_instance = id; 
+                         attack_animation_finished = false; 
+                    } else { attack_animation_finished = true; }
+                } else { attack_animation_finished = true; show_debug_message("ERROR: Could not find Instances layer for FX!");}
+             } else { attack_animation_finished = true; }
+        } else { attack_animation_finished = true; }
+
         combat_state = "attack_waiting";
-        break; // End attack_start
+        break; 
 
     case "attack_waiting":
-        // show_debug_message("ENEMY_STEP: " + string(id) + ": State attack_waiting. Flag: " + string(attack_animation_finished)); // Spammy
-        if (attack_animation_finished) {
-             show_debug_message("ENEMY_STEP: " + string(id) + ": Animation finished flag detected. State -> attack_return");
-            combat_state = "attack_return";
-            attack_animation_finished = false; 
-        }
+        if (attack_animation_finished) { combat_state = "attack_return"; attack_animation_finished = false; }
         break;
 
     case "attack_return":
-        show_debug_message("ENEMY_STEP: " + string(id) + ": State attack_return. Moving to origin."); // Log 14
-        x = origin_x; y = origin_y;
-        if (instance_exists(obj_battle_manager)) { 
-             show_debug_message(" -> Signalling manager animation complete."); // Log 15
-             obj_battle_manager.current_attack_animation_complete = true; 
-        }
+        show_debug_message("ENEMY_STEP: " + string(id) + ": State attack_return."); 
+        x = origin_x; y = origin_y; // Teleport back
+        var _scale_to_restore = variable_instance_get(id, "original_scale") ?? 1.0; // Restore scale
+        image_xscale = _scale_to_restore; image_yscale = _scale_to_restore; 
+        show_debug_message(" -> Restored enemy scale to: " + string(image_xscale));
+        if (instance_exists(obj_battle_manager)) { obj_battle_manager.current_attack_animation_complete = true; }
         target_for_attack = noone; 
-        show_debug_message(" -> Setting state to idle."); // Log 16
         combat_state = "idle"; 
         break;
         
      case "dying": 
         image_alpha -= 0.05; 
-        if (image_alpha <= 0) {
-             show_debug_message(object_get_name(object_index) + " " + string(id) + ": Death animation complete. Destroying instance.");
-             instance_destroy(); 
-        }
+        if (image_alpha <= 0) { instance_destroy(); }
         break;
-     
-} // End Combat State Machine Switch
+        
+      case "dead":
+           break; 
+           
+} // End Switch

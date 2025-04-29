@@ -143,45 +143,48 @@ if (variable_global_exists("active_party_member_index")
                      if (U) d.skill_index = (d.skill_index - 1 + cnt) mod cnt;
                      if (D) d.skill_index = (d.skill_index + 1) mod cnt;
                      
-                     // Confirm Selection
+                     // --- <<< MODIFIED: Skill Confirmation (A Button) >>> ---
                      if (A) { 
                          var s = skills[d.skill_index]; // Get selected skill struct
-                         var can_cast = false; // Default to false
+                         var can_cast = false; 
+                         // Usability Check (MP/Overdrive) - assumes this logic is correct
+                         if (variable_struct_exists(s, "overdrive") && s.overdrive == true) { can_cast = (d.overdrive >= d.overdrive_max); if (!can_cast) { show_debug_message("Not enough OD."); } } 
+                         else { var cost = s.cost ?? 0; can_cast = (d.mp >= cost); if (!can_cast) { show_debug_message("Not enough MP."); } }
 
-                         // Check usability (MP or Overdrive)
-                         if (variable_struct_exists(s, "overdrive") && s.overdrive == true) { 
-                             if (variable_struct_exists(d, "overdrive") && variable_struct_exists(d, "overdrive_max")) {
-                                 can_cast = (d.overdrive >= d.overdrive_max); 
-                                 if (!can_cast) show_debug_message(" -> Cannot cast Overdrive skill: Not enough OD.");
-                             } else { show_debug_message(" -> Cannot cast Overdrive skill: Player data missing OD variables."); }
-                         } else { // Normal MP Skill
-                             var cost = s.cost ?? 0;
-                             if (variable_struct_exists(d, "mp")) {
-                                 can_cast = (d.mp >= cost);
-                                 if (!can_cast) show_debug_message(" -> Cannot cast skill: Not enough MP (Have " + string(d.mp) + ", Need " + string(cost) + ").");
-                             } else { show_debug_message(" -> Cannot cast skill: Player data missing MP variable."); }
-                         }
-
-                         // Proceed if usable
                          if (can_cast && instance_exists(obj_battle_manager)) {
-                             obj_battle_manager.stored_action_data = s; // Store chosen skill struct
-                             // Cost deduction happens in scr_CastSkill now
-                               
-                             if (s.requires_target ?? true) { // Does skill need a target?
-                                 global.battle_target = 0; 
+                             obj_battle_manager.stored_action_data = s; // Store skill struct
+                             
+                             // --- Determine Next State based on Target Type ---
+                             var targetType = s.target_type ?? "enemy"; // Default to enemy if missing
+                             show_debug_message(" -> Skill '" + (s.name ?? "???") + "' selected. Target Type: " + targetType);
+
+                             if (targetType == "enemy") {
+                                 global.battle_target = 0; // Reset enemy target cursor
                                  global.battle_state  = "TargetSelect"; 
-                                 show_debug_message(" -> Skill Selected: " + (s.name ?? "???") + " -> TargetSelect");
-                             } else { // Skill targets self or has no target
-                                 obj_battle_manager.selected_target_id = id; 
+                                 show_debug_message("    -> Transitioning to TargetSelect (Enemy)");
+                             } 
+                             else if (targetType == "ally") {
+                                 // Use active player index as starting point for ally target cursor
+                                 global.battle_ally_target = global.active_party_member_index ?? 0; 
+                                 global.battle_state = "TargetSelectAlly"; // <<< NEW STATE FOR MANAGER
+                                 show_debug_message("    -> Transitioning to TargetSelectAlly");
+                             } 
+                             else if (targetType == "self") {
+                                 obj_battle_manager.selected_target_id = id; // Target is self
                                  global.battle_state  = "ExecutingAction"; 
-                                 show_debug_message(" -> Skill Selected: " + (s.name ?? "???") + " -> ExecutingAction");
+                                 show_debug_message("    -> Self-target skill. Transitioning to ExecutingAction");
+                             } 
+                             else { // Default for unknown types
+                                  show_debug_message("    -> Unknown/Unsupported target_type. Treating as self.");
+                                  obj_battle_manager.selected_target_id = id; 
+                                  global.battle_state  = "ExecutingAction"; 
                              }
-                         } else if (!can_cast) { 
-                              /* Play 'cannot use' sound? */ 
-                              show_debug_message(" -> Failed usability check. Cannot cast.");
-                         } 
+                             // --- End Target Type Check ---
+
+                         } else if (!can_cast) { show_debug_message(" -> Failed usability check."); } 
                          
                      } // End Confirm (A)
+                     // --- <<< END MODIFICATION >>> ---
                  } // End if cnt > 0
                  
                  // Cancel/Back
