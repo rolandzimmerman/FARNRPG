@@ -2,12 +2,7 @@
   "$GMRoomUI":"",
   "%Name":"RoomUI",
   "children":[
-    {"$GMRUILayer":"v1","%Name":"ui_radial_menu","alignItems":2,"children":[
-        {"$GMRSpriteGraphic":"v1","%Name":"graphic_5CFD1C44","animationSpeed":1.0,"colour":4294967295,"flexProperties":{"$InstanceFlexProps":"v1","anchor":0,"resourceType":"InstanceFlexProps",},"frozen":false,"headPosition":0.0,"ignore":false,"inheritedItemId":null,"inheritItemSettings":false,"name":"graphic_5CFD1C44","resourceType":"GMRSpriteGraphic","resourceVersion":"2.0","rotation":35.0,"scaleX":0.5,"scaleY":0.5,"spriteId":{"name":"spr_attack","path":"sprites/spr_attack/spr_attack.yy",},"x":9.085049,"y":1040.6807,},
-        {"$GMRSpriteGraphic":"v1","%Name":"graphic_76729554","animationSpeed":1.0,"colour":4294967295,"flexProperties":{"$InstanceFlexProps":"v1","anchor":0,"resourceType":"InstanceFlexProps",},"frozen":false,"headPosition":0.0,"ignore":false,"inheritedItemId":null,"inheritItemSettings":false,"name":"graphic_76729554","resourceType":"GMRSpriteGraphic","resourceVersion":"2.0","rotation":35.0,"scaleX":0.5,"scaleY":0.5,"spriteId":{"name":"spr_items","path":"sprites/spr_items/spr_items.yy",},"x":147.91496,"y":850.5322,},
-        {"$GMRSpriteGraphic":"v1","%Name":"graphic_717B9474","animationSpeed":1.0,"colour":4294967295,"flexProperties":{"$InstanceFlexProps":"v1","anchor":0,"resourceType":"InstanceFlexProps",},"frozen":false,"headPosition":0.0,"ignore":false,"inheritedItemId":null,"inheritItemSettings":false,"name":"graphic_717B9474","resourceType":"GMRSpriteGraphic","resourceVersion":"2.0","rotation":35.0,"scaleX":0.5,"scaleY":0.5,"spriteId":{"name":"spr_defend","path":"sprites/spr_defend/spr_defend.yy",},"x":210.82993,"y":916.60645,},
-        {"$GMRSpriteGraphic":"v1","%Name":"graphic_6FFBDE72","animationSpeed":1.0,"colour":4294967295,"flexProperties":{"$InstanceFlexProps":"v1","anchor":0,"resourceType":"InstanceFlexProps",},"frozen":false,"headPosition":0.0,"ignore":false,"inheritedItemId":null,"inheritItemSettings":false,"name":"graphic_6FFBDE72","resourceType":"GMRSpriteGraphic","resourceVersion":"2.0","rotation":35.0,"scaleX":0.5,"scaleY":0.5,"spriteId":{"name":"spr_special","path":"sprites/spr_special/spr_special.yy",},"x":0.0,"y":916.60645,},
-      ],"flexDirection":0,"gridX":32,"gridY":32,"justifyContent":1,"name":"ui_radial_menu","nodeColour":4282962418,"resourceType":"GMRUILayer","resourceVersion":"2.0",},
+    {"$GMRUILayer":"v1","%Name":"ui_radial_menu","alignItems":2,"children":[],"flexDirection":0,"gridX":32,"gridY":32,"justifyContent":1,"name":"ui_radial_menu","nodeColour":4282962418,"resourceType":"GMRUILayer","resourceVersion":"2.0",},
   ],
   "locked":false,
   "name":"RoomUI",

@@ -5,8 +5,8 @@
 
 show_debug_message("--- Battle Manager Create START --- Received Formation: " + string(global.battle_formation ?? "UNDEFINED"));
 
-var spawn_offset_x = -192;
-var spawn_offset_y = -192;
+var spawn_offset_x = 0;
+var spawn_offset_y = 0;
 
 // Speed Queue Configuration
 BASE_TICK_VALUE = 10000; 
@@ -54,7 +54,7 @@ show_debug_message(" -> Using layer '" + instance_layer_name + "' (ID: " + strin
 
 // --- Spawn Party Members ---
 show_debug_message("--- Spawning Party Members ---");
-var party_positions = [ [576, 672, 1.00], [768 + 100, 416 + 192, 0.80], [352, 480, 0.90], [544, 256, 0.75] ];
+var party_positions = [ [576, 672, 1.00], [768, 416, 0.80], [352, 480, 0.90], [544, 256, 0.75] ];
 var _fallback_player_data = { hp:1, maxhp:1, mp:0, maxmp:0, atk:1, def:1, matk:1, mdef:1, spd:1, luk:1, level:1, xp:0, xp_require:100, skills:[], skill_index:0, item_index:0, equipment:{weapon:noone,offhand:noone,armor:noone,helm:noone,accessory:noone}, is_defending:false, overdrive:0, overdrive_max:100, name: "Fallback", character_key: "fallback", resistances: { physical: 0, fire: 0, ice: 0, lightning: 0, poison: 0, holy: 0, dark: 0 } };
 
 if (variable_global_exists("party_members") && is_array(global.party_members)) {

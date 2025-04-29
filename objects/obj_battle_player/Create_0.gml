@@ -23,7 +23,7 @@ sprite_before_attack = sprite_index;
 
 // --- Attack Animation Speed ---
 // <<< INCREASED SPEED - Adjust to your preference >>>
-attack_anim_speed = 0.5; // Example: Play at 50% speed. '1' is normal speed. 
+attack_anim_speed = 1.25; // Example: Play at 50% speed. '1' is normal speed. 
 // <<< END ADJUSTMENT >>>
 
 // --- Movement Animation (Not used) ---
