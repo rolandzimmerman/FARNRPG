@@ -1,9 +1,9 @@
 {
   "$GMScript":"v1",
-  "%Name":"Drawing",
+  "%Name":"scr_DrawiShadow",
   "isCompatibility":false,
   "isDnD":false,
-  "name":"Drawing",
+  "name":"scr_DrawiShadow",
   "parent":{
     "name":"Scripts",
     "path":"folders/Scripts.yy",

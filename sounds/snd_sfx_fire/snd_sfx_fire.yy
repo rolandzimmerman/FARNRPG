@@ -9,7 +9,7 @@
   "bitRate":128,
   "compression":0,
   "conversionMode":0,
-  "duration":0.9142857,
+  "duration":2.1420407,
   "name":"snd_sfx_fire",
   "parent":{
     "name":"Sounds",

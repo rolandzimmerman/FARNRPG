@@ -16,7 +16,7 @@ function scr_BuildCharacterDB() {
     ds_map_add(_char_map, "hero", {
         name: "Hero", class: "Hero", hp: 40, maxhp: 40, mp: 20, maxmp: 20, atk: 10, def: 5, matk: 8, mdef: 4, spd: 7, luk: 5, level: 1, xp: 0, xp_require: 100, overdrive: 0, overdrive_max: 100, 
         skills: [ 
-            { name: "Heal", cost: 5, effect: "heal_hp", target_type: "ally", heal_amount: 25, power_stat: "matk", animation_type: "magic", fx_sprite: default_heal_fx, fx_sound: default_heal_snd }, 
+            { name: "Heal", cost: 5, effect: "heal_hp", target_type: "ally", heal_amount: 25, power_stat: "matk", animation_type: "magic", fx_sprite: default_heal_fx, fx_sound: default_heal_snd, usable_in_field: true}, 
             { name: "Fireball", cost: 6, effect: "damage_enemy", target_type: "enemy", damage: 18, element: "fire", power_stat: "matk", animation_type: "magic", fx_sprite: spr_fx_fireball ?? default_damage_fx, fx_sound: snd_sfx_fire ?? default_damage_snd }, 
             { name: "Blind", cost: 5, effect: "blind", target_type: "enemy", duration: 3, animation_type: "magic", fx_sprite: default_status_fx, fx_sound: default_status_snd }, 
             { name: "Shame", cost: 8, effect: "shame", target_type: "enemy", duration: 3, animation_type: "magic", fx_sprite: default_status_fx, fx_sound: default_status_snd }, 
@@ -30,7 +30,7 @@ function scr_BuildCharacterDB() {
     ds_map_add(_char_map, "claude", {
         name: "Claude", class: "Cleric", hp: 35, maxhp: 35, mp: 25, maxmp: 25, atk: 8, def: 4, matk: 12, mdef: 6, spd: 6, luk: 7, level: 1, xp: 0, xp_require: 100, overdrive: 0, overdrive_max: 100, 
         skills: [ 
-             { name: "Heal", cost: 5, effect: "heal_hp", target_type: "ally", heal_amount: 25, power_stat: "matk", animation_type: "magic", fx_sprite: default_heal_fx, fx_sound: default_heal_snd }, 
+             { name: "Heal", cost: 5, effect: "heal_hp", target_type: "ally", heal_amount: 25, power_stat: "matk", animation_type: "magic", fx_sprite: default_heal_fx, fx_sound: default_heal_snd,usable_in_field: true }, 
              { name: "Zap", cost: 4, effect: "damage_enemy", target_type: "enemy", damage: 15, element: "lightning", power_stat: "matk", animation_type: "magic", fx_sprite: default_damage_fx, fx_sound: default_damage_snd }, 
              { name: "Bind", cost: 6, effect: "bind", target_type: "enemy", duration: 3, animation_type: "magic", fx_sprite: default_status_fx, fx_sound: default_status_snd }, 
         ], 
@@ -44,7 +44,7 @@ function scr_BuildCharacterDB() {
         name: "Gabby", class: "Mage", hp: 30, maxhp: 30, mp: 35, maxmp: 35, atk: 6, def: 3, matk: 15, mdef: 8, spd: 9, luk: 6, level: 1, xp: 0, xp_require: 100, overdrive: 0, overdrive_max: 100, 
         skills: [ 
             { name: "Fireball", cost: 6, effect: "damage_enemy", target_type: "enemy", damage: 18, element: "fire", power_stat: "matk", animation_type: "magic", fx_sprite: spr_fx_fireball ?? default_damage_fx, fx_sound: snd_sfx_fire ?? default_damage_snd }, 
-            { name: "Heal", cost: 5, effect: "heal_hp", target_type: "ally", heal_amount: 25, power_stat: "matk", animation_type: "magic", fx_sprite: default_heal_fx, fx_sound: default_heal_snd }, 
+            { name: "Heal", cost: 5, effect: "heal_hp", target_type: "ally", heal_amount: 25, power_stat: "matk", animation_type: "magic", fx_sprite: default_heal_fx, fx_sound: default_heal_snd, usable_in_field: true }, 
         ], 
         equipment: { weapon: "wooden_staff", offhand: noone, armor: noone, helm: noone, accessory: "lucky_charm" }, 
         resistances: variable_clone(base_resistances, true), character_key: "gabby",

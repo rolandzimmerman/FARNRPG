@@ -67,6 +67,7 @@ function scr_BuildSpellDB() {
             duration:    3,
             fx_sprite:   spr_fx_magic, // <<< ADDED (Example sprite)
             fx_sound:    snd_sfx_magic     // <<< ADDED (Example sound)
+            // usable_in_field is omitted, treated as false
         },
        // --- Healing / Buff Spells ---
        heal: {
@@ -77,7 +78,8 @@ function scr_BuildSpellDB() {
             heal_amount: 25,
             power_stat:  "matk",
             fx_sprite:   spr_fx_magic, // <<< ADDED (Example sprite)
-            fx_sound:    snd_sfx_magic     // <<< ADDED (Example sound)
+            fx_sound:    snd_sfx_magic,     // <<< ADDED (Example sound)
+            usable_in_field: true // <<< ADDED: Can be used outside battle
         },
         greater_heal: {
             name:        "Greater Heal",
@@ -87,7 +89,8 @@ function scr_BuildSpellDB() {
             heal_amount: 75,
             power_stat:  "matk",
             fx_sprite:   spr_fx_magic, // <<< ADDED (Example sprite)
-            fx_sound:    snd_sfx_magic     // <<< ADDED (Example sound)
+            fx_sound:    snd_sfx_magic,     // <<< ADDED (Example sound)
+            usable_in_field: true // <<< ADDED: Can be used outside battle
         },
         // === Overdrive Skills ===
         overdrive_strike: {
