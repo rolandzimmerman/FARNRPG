@@ -172,23 +172,33 @@ switch (global.battle_state) {
          var P = 0; 
          var _up = keyboard_check_pressed(vk_up) || gamepad_button_check_pressed(P, gp_padu);
          var _down = keyboard_check_pressed(vk_down) || gamepad_button_check_pressed(P, gp_padd);
+         var _left = keyboard_check_pressed(vk_left)   || gamepad_button_check_pressed(P, gp_padl);
+         var _right= keyboard_check_pressed(vk_right)  || gamepad_button_check_pressed(P, gp_padr);
          var _conf = keyboard_check_pressed(vk_enter) || keyboard_check_pressed(vk_space) || gamepad_button_check_pressed(P, gp_face1);
          var _cancel = keyboard_check_pressed(vk_escape)|| gamepad_button_check_pressed(P, gp_face2); 
 
          // Handle Cursor Movement (Ally List)
-          if (_up || _down) {
+          if (_left || _right) {
             var _current_target_index = global.battle_ally_target; 
             var _new_target_index = _current_target_index;
-            var _dir = _up ? -1 : 1;
+            var _dir = _left ? -1 : 1;
             var _attempts = 0; 
             repeat(_party_count) { 
                 _new_target_index = (_current_target_index + (_dir * (_attempts + 1)) + _party_count) mod _party_count; 
                  var _check_inst = global.battle_party[| _new_target_index];
                  var _can_target_this_ally = instance_exists(_check_inst); 
+                 // Add Validation based on Action Type (Skill or Item)
                  if (_can_target_this_ally && is_struct(stored_action_data)) {
-                     if (stored_action_data.effect == "heal_hp" && (!variable_instance_exists(_check_inst,"data") || _check_inst.data.hp <= 0)) { _can_target_this_ally = false; }
-                 } else if (!_can_target_this_ally) { /* Invalid instance */ }
-                 if (_can_target_this_ally) break; 
+                     var effect_type = stored_action_data.effect ?? "";
+                     var target_data = variable_instance_get(_check_inst,"data");
+                     var target_hp = variable_struct_get(target_data,"hp") ?? -1;
+                     
+                     if (effect_type == "heal_hp" && target_hp <= 0) { _can_target_this_ally = false; } // Can't heal dead
+                     // else if (effect_type == "revive" && target_hp > 0) { _can_target_this_ally = false; } // Can only revive dead
+                     // Add more checks as needed
+                 } else if (!_can_target_this_ally) { /* Instance doesn't exist */ }
+                 
+                 if (_can_target_this_ally) break; // Found valid target
                  _attempts++;
                  if (_attempts >= _party_count) { _new_target_index = _current_target_index; break;} 
             }
@@ -200,98 +210,116 @@ switch (global.battle_state) {
             show_debug_message(" -> TargetSelectAlly: Input CONFIRM detected.");
             if (global.battle_ally_target >= 0 && global.battle_ally_target < _party_count) {
                 var potential_target_id = ds_list_find_value(global.battle_party, global.battle_ally_target); 
-                var _can_target_this_ally = instance_exists(potential_target_id);
+                // Re-validate target before confirming
+                 var _can_target_this_ally = instance_exists(potential_target_id);
                  if (_can_target_this_ally && is_struct(stored_action_data)) {
-                     if (stored_action_data.effect == "heal_hp" && (!variable_instance_exists(potential_target_id,"data") || potential_target_id.data.hp <= 0)) { _can_target_this_ally = false;}
+                     var effect_type = stored_action_data.effect ?? "";
+                     var target_data = variable_instance_get(potential_target_id,"data");
+                     var target_hp = variable_struct_get(target_data,"hp") ?? -1;
+                     if (effect_type == "heal_hp" && target_hp <= 0) { _can_target_this_ally = false;}
+                     // Add more validation
                  } else if (!_can_target_this_ally) { /* Invalid */ }
+
                 if (_can_target_this_ally) { 
                     selected_target_id = potential_target_id; 
                     show_debug_message("    -> Ally target confirmed: " + string(selected_target_id) + ". Setting state to ExecutingAction.");
                     global.battle_state = "ExecutingAction"; 
-                } else { show_debug_message("    -> Selected ally is not a valid target for this skill."); }
+                } else { show_debug_message("    -> Selected ally is not a valid target for this action."); /* Fail sound? */ }
             } else { show_debug_message("    -> Invalid ally target index."); selected_target_id = noone; }
          } 
          // Handle Cancellation
          else if (_cancel) { 
             show_debug_message(" -> TargetSelectAlly: Input CANCEL detected.");
-            global.battle_state = "skill_select"; // Go back specifically to skill selection menu
+            // --- Determine previous state ---
+            var previous_state = "player_input"; // Default back to main menu
+            if (is_struct(stored_action_data)) {
+                if (variable_struct_exists(stored_action_data, "usable_in_battle")) { previous_state = "item_select"; }
+                else if (variable_struct_exists(stored_action_data, "effect")) { previous_state = "skill_select"; }
+            }
+            global.battle_state = previous_state; 
+            // --- End determine previous state ---
             stored_action_data = undefined; 
             selected_target_id = noone;
-            show_debug_message("    -> Reset state to skill_select.");
+            show_debug_message("    -> Reset state to " + previous_state);
          }
     }
     break; // End TargetSelectAlly
     // --- <<< END ADDED STATE >>> ---
 
-    // --- Modify ExecutingAction State ---
+    // --- <<< REVISED ExecutingAction State >>> ---
     case "ExecutingAction": 
-        show_debug_message("Manager: State ExecutingAction -> Setting up Action Animation for Actor: " + string(currentActor));
+        show_debug_message("Manager: State ExecutingAction -> Actor: " + string(currentActor));
         if (instance_exists(currentActor)) {
-            if (!variable_instance_exists(currentActor,"data") || currentActor.data.hp <= 0) { global.battle_state = "action_complete"; break; } // Skip if actor KOd
+             if (!variable_instance_exists(currentActor,"data") || currentActor.data.hp <= 0) { 
+                 show_debug_message(" -> Actor KO'd before action execution.");
+                 global.battle_state = "action_complete"; break; 
+             } 
 
-            var _action_type = stored_action_data; 
-            var _target = selected_target_id; 
-            var next_actor_state = "attack_start"; // Default to physical attack animation
-
-            // --- ADDED LOGGING & Logic Refinement ---
-            show_debug_message("   -> Action Data Type: " + typeof(_action_type));
-            if (is_struct(_action_type)) {
-                                // --- <<< FIX: Check for ITEM *before* checking for SKILL >>> ---
-                if (variable_struct_exists(_action_type, "usable_in_battle")) { // Check if it's an Item FIRST
-                    show_debug_message("   -> Action is an ITEM. Using 'attack_start' animation path.");
-                    next_actor_state = "attack_start"; // Items use attack animation path
-                } 
-                // --- <<< END FIX >>> ---
-                else if (variable_struct_exists(_action_type, "effect")) { // It's a skill
-                     // Safely get anim_type, default to "magic"
-                     var anim_type = variable_struct_get(_action_type, "animation_type") ?? "magic"; 
-                     show_debug_message("   -> Action is a SKILL. Animation Type found/defaulted: '" + anim_type + "'"); // Log determined type
-                     
-                     if (anim_type == "magic") {
-                          next_actor_state = "cast_start"; 
-                     } else if (anim_type == "physical") {
-                          next_actor_state = "attack_start"; 
-                     } else { // Unknown type defaults to attack for now
-                          show_debug_message("   -> WARNING: Unknown animation_type '" + anim_type + "'. Defaulting to attack_start.");
-                          next_actor_state = "attack_start"; 
-                     }
-                } else if (variable_struct_exists(_action_type, "usable_in_battle")) { // It's an item
-                     show_debug_message("   -> Action is an ITEM. Using attack_start animation.");
-                     next_actor_state = "attack_start"; // Items use attack animation for now
-                } else {
-                     show_debug_message("   -> Action is an unknown STRUCT. Using attack_start.");
-                     next_actor_state = "attack_start";
-                }
-            } else if (is_string(_action_type)) {
-                 if (_action_type == "Attack") {
-                      show_debug_message("   -> Action is Basic Attack. Using attack_start animation.");
-                      next_actor_state = "attack_start";
-                 } else if (_action_type == "Defend") {
-                      show_debug_message("   -> Action is Defend. Applying directly.");
-                      if (variable_instance_exists(currentActor,"data")) currentActor.data.is_defending = true; 
-                      global.battle_state = "action_complete"; 
-                      break; // Exit case early for Defend
-                 } else {
-                      show_debug_message("   -> Action is unknown STRING. Using attack_start.");
-                      next_actor_state = "attack_start";
-                 }
-            } else {
-                 show_debug_message("   -> Action Data is not Struct or String. Using attack_start.");
-                 next_actor_state = "attack_start";
-            }
-            show_debug_message("   -> Determined next actor state: '" + next_actor_state + "'"); // Log final decision
-            // --- END LOGGING & Refinement ---
-
-            // Tell actor to start its animation sequence
-            currentActor.stored_action_for_anim = stored_action_data; 
-            currentActor.target_for_attack = _target; 
-            currentActor.combat_state = next_actor_state; // Assign the determined state
+            var _action_data = stored_action_data; // Attack string, Defend string, Skill struct, Item struct
+            var _target = selected_target_id;    // Target instance or noone
+            var next_actor_state = "idle";     // Default state if action has no animation
+            var _action_succeeded = false;       // Did the effect get applied (not missed/resisted etc)?
             
-            current_attack_animation_complete = false;
-            global.battle_state = "waiting_for_animation"; 
-            show_debug_message(" -> Told actor " + string(currentActor) + " to start state '" + next_actor_state + "'. Waiting for animation...");
-        } else { global.battle_state = "calculate_turn"; }
+            // --- 1. Apply Effect / Check Usability / Deduct Cost ---
+            if (is_string(_action_data)) { // Basic Attack or Defend
+                 if (_action_data == "Attack") {
+                      show_debug_message(" -> Executing: Basic Attack");
+                      if (script_exists(scr_PerformAttack)) {
+                           _action_succeeded = scr_PerformAttack(currentActor, _target); // Script handles damage/miss/popup
+                           if (_action_succeeded) next_actor_state = "attack_start"; // Trigger attack animation
+                      } else { show_debug_message("ERROR: scr_PerformAttack missing!");}
+                 } else if (_action_data == "Defend") {
+                      show_debug_message(" -> Executing: Defend");
+                      if (variable_instance_exists(currentActor,"data")) currentActor.data.is_defending = true; 
+                      _action_succeeded = true; // Defend always 'succeeds'
+                      next_actor_state = "idle"; // No special animation state for defend? Or add "defend_start"?
+                      global.battle_state = "action_complete"; // Defend is instant, skip animation wait
+                      break; 
+                 }
+            } else if (is_struct(_action_data)) { // Skill or Item
+                 if (variable_struct_exists(_action_data, "usable_in_battle")) { // ITEM
+                     show_debug_message(" -> Executing: Item Use");
+                     if (script_exists(scr_UseItem)) {
+                          // Target for items often determined within the script or based on item.target
+                          _action_succeeded = scr_UseItem(currentActor, _action_data, _target); // Script handles effect/popup
+                          if (_action_succeeded) next_actor_state = "item_start"; // Trigger item animation
+                     } else { show_debug_message("ERROR: scr_UseItem missing!");}
+                 } 
+                 else if (variable_struct_exists(_action_data, "effect")) { // SKILL
+                     show_debug_message(" -> Executing: Skill Cast");
+                     if (script_exists(scr_CastSkill)) {
+                          // Target already determined by TargetSelect/TargetSelectAlly or set to self
+                          _action_succeeded = scr_CastSkill(currentActor, _action_data, _target); // Script handles cost/effect/popup
+                          if (_action_succeeded) { // Only animate if cast was successful (cost paid etc.)
+                               var anim_type = variable_struct_get(_action_data, "animation_type") ?? "magic";
+                               if (anim_type == "physical") { next_actor_state = "attack_start"; } // Physical skills use attack anim
+                               else { next_actor_state = "cast_start"; } // Magic skills use cast anim
+                          }
+                     } else { show_debug_message("ERROR: scr_CastSkill missing!");}
+                 }
+            } else { show_debug_message(" -> ERROR: Unknown action type in ExecutingAction!"); }
+
+            // --- 2. Trigger Actor's Animation State (if applicable) ---
+            if (next_actor_state != "idle") {
+                 show_debug_message(" -> Telling actor " + string(currentActor) + " to start state '" + next_actor_state + "'");
+                 currentActor.stored_action_for_anim = _action_data; // Pass action data for visual reference
+                 currentActor.target_for_attack = _target;         // Pass target for visual reference/FX positioning
+                 currentActor.combat_state = next_actor_state; 
+                 
+                 current_attack_animation_complete = false; // Reset flag
+                 global.battle_state = "waiting_for_animation"; 
+                 show_debug_message(" -> Manager state set to waiting_for_animation.");
+            } else if (global.battle_state != "action_complete") { // If we didn't already skip (like for Defend)
+                 show_debug_message(" -> Action has no animation or failed. Proceeding to action_complete.");
+                 global.battle_state = "action_complete"; // Skip waiting if no animation needed or action failed pre-animation
+            }
+
+        } else { // Actor doesn't exist
+             show_debug_message("ERROR: currentActor invalid in ExecutingAction state!");
+             global.battle_state = "calculate_turn"; 
+        }
         break; // End ExecutingAction
+    // --- <<< END REVISED ExecutingAction State >>> ---
 
     case "enemy_turn": // Initiates Enemy Action Animation
          show_debug_message(">>> MANAGER STATE: enemy_turn <<<"); // Log Entry

@@ -67,6 +67,8 @@ var list_item_w           = 240;
 var list_qty_w            = 40;
 var list_box_w            = list_item_w + list_qty_w + list_padding * 3;
 var list_select_color     = c_yellow;
+var target_cursor_sprite  = spr_target_cursor; // Assign your actual cursor sprite asset here
+var target_cursor_y_offset= -20; // Adjust this value (-20 = 20 pixels above) to position cursor correctly
 
 // Turn Order Display Constants
 var turn_order_x = display_get_gui_width() - 200; // Position from right edge
@@ -192,7 +194,32 @@ if (_current_battle_state == "TargetSelect" // <<< Use string state
         }
     }
 }
-
+    // --- <<< ADDED: Ally Target Cursor >>> ---
+    else if (_current_battle_state == "TargetSelectAlly" && variable_global_exists("battle_ally_target")) {
+         var n_party = ds_list_size(global.battle_party);
+         var ally_target_idx = global.battle_ally_target ?? -1; // Get selected ally index safely
+         
+         if (n_party > 0 && ally_target_idx >= 0 && ally_target_idx < n_party) {
+             var tid = global.battle_party[| ally_target_idx];
+             if (instance_exists(tid)) {
+                 // Position cursor relative to the PARTY HUD element for that character
+                 var hud_x = party_hud_positions_x[ally_target_idx] ?? tid.x; // Fallback to instance x if HUD pos invalid
+                 var hud_center_x = hud_x + 128; // Estimate center of HUD element (adjust 128 based on your HUD width)
+                 var hud_top_y = party_hud_y; 
+                 
+                 // Draw cursor above the HUD element
+                 var tx = hud_center_x;
+                 var ty = hud_top_y + target_cursor_y_offset; // Use the offset
+                                  
+                 if (sprite_exists(target_cursor_sprite)) {
+                     draw_sprite(target_cursor_sprite, -1, tx, ty); 
+                 } else { // Fallback text cursor if sprite missing
+                     draw_set_halign(fa_center); draw_set_valign(fa_bottom); 
+                     draw_text_color(tx, ty, "▼", c_yellow, c_yellow, c_yellow, c_yellow, 1); 
+                 }
+             }
+         }
+    }
 // === Draw Turn Order Display ===
 if (instance_exists(obj_battle_manager) && variable_instance_exists(obj_battle_manager, "turnOrderDisplay") && is_array(obj_battle_manager.turnOrderDisplay)) {
      var _turn_order = obj_battle_manager.turnOrderDisplay;

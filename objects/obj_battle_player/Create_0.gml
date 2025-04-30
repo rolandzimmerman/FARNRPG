@@ -19,8 +19,10 @@ stored_action_for_anim = undefined;
 sprite_assigned = false;    
 idle_sprite = sprite_index; 
 attack_sprite_asset = -1;   
+casting_sprite_asset = -1; 
+item_sprite_asset = -1; // <<< ADDED: To store item usage sprite
 sprite_before_attack = sprite_index; 
-original_scale = 1.0; // <<< ADDED: Store the original scale factor
+original_scale = 1.0; 
 
 // --- Attack Animation Speed ---
 attack_anim_speed = 0.5; 
