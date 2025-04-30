@@ -2,22 +2,42 @@
 /// @description Returns a DS Map containing definitions for all items in the game.
 function scr_ItemDatabase() {
     var _item_map = ds_map_create();
+    
+    // --- Define Default FX Assets (Use your actual assets or keep these placeholders) ---
+    var default_item_fx_sprite = spr_item_effect_default ?? spr_pow; // e.g., A sparkle effect
+    var default_item_fx_sound = snd_item_use ?? snd_sfx_heal;   // e.g., A generic item use jingle
+    var default_bomb_fx_sprite = spr_fx_fireball ?? spr_pow;       // e.g., An explosion sprite
+    var default_bomb_fx_sound = snd_sfx_heal ?? snd_punch;     // e.g., An explosion sound
+    var default_cure_fx_sprite = spr_fx_heal ?? spr_pow;            // e.g., A status cure sparkle
+    var default_cure_fx_sound = snd_sfx_heal ?? snd_sfx_heal;           // e.g., A cure sound
 
     // --- CONSUMABLE ITEMS ---
     ds_map_add(_item_map, "potion", {
         item_key: "potion", name: "Potion", description: "Restores 50 HP.",
         effect: "heal_hp", value: 50, target: "ally",
-        usable_in_battle: true, usable_in_field: true, sprite_index: spr_item_food
+        usable_in_battle: true, usable_in_field: true, 
+        sprite_index: spr_item_food, // Inventory icon
+        // --- ADDED FX ---
+        fx_sprite: default_item_fx_sprite, // Visual effect when used
+        fx_sound: default_item_fx_sound    // Sound effect when used
     });
     ds_map_add(_item_map, "bomb", {
         item_key: "bomb", name: "Bomb", description: "Deals 30 fire damage to one enemy.",
         effect: "damage_enemy", value: 30, element: "fire", target: "enemy", 
-        usable_in_battle: true, usable_in_field: false, sprite_index: spr_item_bomb
+        usable_in_battle: true, usable_in_field: false, 
+        sprite_index: spr_item_bomb, // Inventory icon
+        // --- ADDED FX ---
+        fx_sprite: default_bomb_fx_sprite, 
+        fx_sound: default_bomb_fx_sound 
     });
     ds_map_add(_item_map, "antidote", {
         item_key: "antidote", name: "Antidote", description: "Cures poison.",
         effect: "cure_status", value: "poison", target: "ally",
-        usable_in_battle: true, usable_in_field: true, sprite_index: spr_item_antidote
+        usable_in_battle: true, usable_in_field: true, 
+        sprite_index: spr_item_antidote, // Inventory icon
+        // --- ADDED FX ---
+        fx_sprite: default_cure_fx_sprite, 
+        fx_sound: default_cure_fx_sound 
     });
 
     // --- EQUIPMENT ITEMS ---

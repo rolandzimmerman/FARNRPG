@@ -27,8 +27,8 @@
   "nineSlice":null,
   "origin":4,
   "parent":{
-    "name":"Battle",
-    "path":"folders/Sprites/Battle.yy",
+    "name":"Animations",
+    "path":"folders/Sprites/Battle/Animations.yy",
   },
   "preMultiplyAlpha":false,
   "resourceType":"GMSprite",

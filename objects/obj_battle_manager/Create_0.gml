@@ -50,7 +50,13 @@ if (instance_layer_id == -1) {
      game_end(); exit;
 }
 show_debug_message(" -> Using layer '" + instance_layer_name + "' (ID: " + string(instance_layer_id) + ") for actors/effects.");
-
+// --- Sprite Handling ---
+sprite_assigned = false;    
+idle_sprite = sprite_index; 
+attack_sprite_asset = -1;   
+casting_sprite_asset = -1; // <<< ADDED: To store casting sprite
+sprite_before_attack = sprite_index; 
+original_scale = 1.0; 
 
 // --- Spawn Party Members ---
 show_debug_message("--- Spawning Party Members ---");

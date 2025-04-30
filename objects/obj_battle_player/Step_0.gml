@@ -2,7 +2,6 @@
 /// Handles player input processing AND combat animation state machine.
 
 // --- One-Time Sprite Assignment --- 
-// Runs after the manager assigns 'data' in its Create event
 if (!variable_instance_exists(id, "sprite_assigned") || !sprite_assigned) { 
     if (variable_instance_exists(id, "data") && is_struct(data)) { 
         if (variable_struct_exists(data, "character_key")) {
@@ -11,57 +10,38 @@ if (!variable_instance_exists(id, "sprite_assigned") || !sprite_assigned) {
             var base_char_info = script_exists(scr_FetchCharacterInfo) ? scr_FetchCharacterInfo(_char_key) : undefined; 
             
             if (is_struct(base_char_info)) {
-                // Assign Battle Sprite (Idle/Base)
-                if (variable_struct_exists(base_char_info, "battle_sprite") && sprite_exists(base_char_info.battle_sprite)) {
-                   sprite_index = base_char_info.battle_sprite; 
-                   idle_sprite = sprite_index; 
-                } else { 
-                   show_debug_message(" -> Warning: No valid 'battle_sprite' in base data for " + _char_key); 
-                   idle_sprite = sprite_index; // Use whatever sprite it started with
-                }
-                sprite_before_attack = idle_sprite; // Initialize with idle sprite
-                
-                // Assign Attack Sprite
-                if (variable_struct_exists(base_char_info, "attack_sprite") && sprite_exists(base_char_info.attack_sprite)) {
-                   attack_sprite_asset = base_char_info.attack_sprite; 
-                } else { 
-                   show_debug_message(" -> Warning: No valid 'attack_sprite' in base data for " + _char_key + ". Using idle sprite as fallback."); 
-                   attack_sprite_asset = idle_sprite; // Fallback to idle sprite
-                }
+                 var base_scale = 1.0; 
+                 if (variable_global_exists("party_positions") && is_array(global.party_positions) && variable_instance_exists(id,"party_slot_index") && party_slot_index >= 0 && party_slot_index < array_length(global.party_positions)) { base_scale = global.party_positions[party_slot_index][2] ?? 1.0; }
+                 image_xscale = base_scale; image_yscale = base_scale; original_scale = base_scale; 
                  
-                // Assign Default Attack FX Sprite (can be overridden by weapon/skill)
-                if (variable_struct_exists(base_char_info, "attack_fx_sprite") && sprite_exists(base_char_info.attack_fx_sprite)) {
-                    attack_fx_sprite = base_char_info.attack_fx_sprite; 
-                } else { 
-                    attack_fx_sprite = spr_pow; // Default if not specified
-                    show_debug_message(" -> Warning: No 'attack_fx_sprite' in base data for " + _char_key + ". Defaulting to spr_pow."); 
-                }
+                 // --- Get Sprites ---
+                 idle_sprite = variable_struct_get(base_char_info,"battle_sprite") ?? sprite_index;
+                 attack_sprite_asset = variable_struct_get(base_char_info,"attack_sprite") ?? idle_sprite;
+                 casting_sprite_asset = variable_struct_get(base_char_info,"cast_sprite") ?? idle_sprite; // Assign casting sprite
+                 sprite_index = idle_sprite; 
+                 sprite_before_attack = idle_sprite; 
                  
-                // Assign Default Attack FX Sound (can be overridden by weapon/skill)
-                if (variable_struct_exists(base_char_info, "attack_sound") && audio_exists(base_char_info.attack_sound)) {
-                     attack_fx_sound = base_char_info.attack_sound;
-                } else { 
-                     attack_fx_sound = snd_punch; // Default if not specified
-                     show_debug_message(" -> Warning: No 'attack_sound' in base data for " + _char_key + ". Defaulting to snd_punch."); 
-                }
+                 // Get FX/Sound Defaults
+                 attack_fx_sprite = variable_struct_get(base_char_info,"attack_fx_sprite") ?? spr_pow; 
+                 attack_fx_sound = variable_struct_get(base_char_info,"attack_sound") ?? snd_punch;
+
+                 show_debug_message("    -> Assigned Sprites: Idle=" + sprite_get_name(idle_sprite) + 
+                                    ", Attack=" + sprite_get_name(attack_sprite_asset) + 
+                                    ", Cast=" + sprite_get_name(casting_sprite_asset)); 
 
             } else { 
-                show_debug_message(" -> Warning: scr_FetchCharacterInfo did not return valid struct for " + _char_key + ". Using defaults."); 
-                idle_sprite = sprite_index; 
-                attack_sprite_asset = idle_sprite; 
-                attack_fx_sprite = spr_pow; 
-                attack_fx_sound = snd_punch;
+                 idle_sprite = sprite_index; attack_sprite_asset = idle_sprite; casting_sprite_asset = idle_sprite;
+                 attack_fx_sprite = spr_pow; attack_fx_sound = snd_punch;
+                 original_scale = image_xscale; 
+                 show_debug_message(" -> WARNING: Failed to get base_char_info, using default sprites.");
             }
             
-            image_index = 0;
-            image_speed = 0; // Start idle
+            image_index = 0; image_speed = 0; 
             sprite_assigned = true; 
-            show_debug_message("Player " + string(id) + " Sprites Initialized -> Idle: " + sprite_get_name(idle_sprite) + " | Attack: " + sprite_get_name(attack_sprite_asset) + " | Default FX: " + sprite_get_name(attack_fx_sprite));
-
-        } else { show_debug_message(" -> Warning: No 'character_key' in player data for sprite assignment."); }
-    } else { /* Data not assigned yet, wait for next step */ }
-} // End !sprite_assigned check
-
+            show_debug_message("Player " + string(id) + " Sprites Initialized & Assigned."); 
+        } else { /* Missing character_key */ }
+    } else { /* Data not assigned yet */ }
+} 
 
 // --- Player INPUT Handling (Only if it's my turn and in an input state) ---
 if (variable_global_exists("active_party_member_index")
@@ -84,7 +64,6 @@ if (variable_global_exists("active_party_member_index")
         var Y = keyboard_check_pressed(ord("Y"))   || gamepad_button_check_pressed(P, gp_face4); // Item? (Maybe Xbox Y / PS Triangle?)
         var U = keyboard_check_pressed(vk_up)      || gamepad_button_check_pressed(P, gp_padu);   // Up
         var D = keyboard_check_pressed(vk_down)    || gamepad_button_check_pressed(P, gp_padd);   // Down
-        // Left/Right inputs for party switching handled in equipment menu directly
 
         // Process based on Manager's State
         switch (st) {
@@ -136,7 +115,7 @@ if (variable_global_exists("active_party_member_index")
                 break; // End "player_input" case
             // ==================================================================
             case "skill_select":
-                 var skills = (variable_struct_exists(d, "skills") && is_array(d.skills)) ? d.skills : [];
+                 var skills = d.skills ?? []; 
                  var cnt = array_length(skills);
                  if (cnt > 0) {
                      // Navigation
@@ -145,9 +124,9 @@ if (variable_global_exists("active_party_member_index")
                      
                      // --- <<< MODIFIED: Skill Confirmation (A Button) >>> ---
                      if (A) { 
-                         var s = skills[d.skill_index]; // Get selected skill struct
+                         var s = skills[d.skill_index]; 
                          var can_cast = false; 
-                         // Usability Check (MP/Overdrive) - assumes this logic is correct
+                         // Usability Check (Your existing logic)
                          if (variable_struct_exists(s, "overdrive") && s.overdrive == true) { can_cast = (d.overdrive >= d.overdrive_max); if (!can_cast) { show_debug_message("Not enough OD."); } } 
                          else { var cost = s.cost ?? 0; can_cast = (d.mp >= cost); if (!can_cast) { show_debug_message("Not enough MP."); } }
 
@@ -155,18 +134,19 @@ if (variable_global_exists("active_party_member_index")
                              obj_battle_manager.stored_action_data = s; // Store skill struct
                              
                              // --- Determine Next State based on Target Type ---
+                             // Assumes 'target_type' exists in skill struct 's' (added in scr_BuildCharacterDB)
                              var targetType = s.target_type ?? "enemy"; // Default to enemy if missing
                              show_debug_message(" -> Skill '" + (s.name ?? "???") + "' selected. Target Type: " + targetType);
 
                              if (targetType == "enemy") {
-                                 global.battle_target = 0; // Reset enemy target cursor
-                                 global.battle_state  = "TargetSelect"; 
+                                 global.battle_target = 0; // Reset enemy target cursor index
+                                 global.battle_state  = "TargetSelect"; // Go to enemy targeting state
                                  show_debug_message("    -> Transitioning to TargetSelect (Enemy)");
                              } 
                              else if (targetType == "ally") {
                                  // Use active player index as starting point for ally target cursor
-                                 global.battle_ally_target = global.active_party_member_index ?? 0; 
-                                 global.battle_state = "TargetSelectAlly"; // <<< NEW STATE FOR MANAGER
+                                 global.battle_ally_target = global.active_party_member_index ?? 0; // Initialize ally cursor
+                                 global.battle_state = "TargetSelectAlly"; // <<< Tell manager to use NEW state
                                  show_debug_message("    -> Transitioning to TargetSelectAlly");
                              } 
                              else if (targetType == "self") {
@@ -174,6 +154,7 @@ if (variable_global_exists("active_party_member_index")
                                  global.battle_state  = "ExecutingAction"; 
                                  show_debug_message("    -> Self-target skill. Transitioning to ExecutingAction");
                              } 
+                             // Add handling for "all_enemies", "all_allies", "any" here later if needed
                              else { // Default for unknown types
                                   show_debug_message("    -> Unknown/Unsupported target_type. Treating as self.");
                                   obj_battle_manager.selected_target_id = id; 
@@ -247,118 +228,218 @@ if (variable_global_exists("active_party_member_index")
 } // End if my turn 
 
 
-// --- Combat Animation State Machine (Runs always) ---
-if (combat_state == "idle") { origin_x = x; origin_y = y; }
-
+// --- Combat Animation State Machine ---
+if (combat_state == "idle") { origin_x = x; origin_y = y; original_scale = image_xscale; }
 switch (combat_state) {
     case "idle":
         if (sprite_index != idle_sprite) { sprite_index = idle_sprite; image_index = 0; }
+        if (image_xscale != original_scale) { image_xscale = original_scale; image_yscale = original_scale; }
         if (image_speed != 0) image_speed = 0; 
         break;
 
+    // --- Physical Attack / Item Animation ---
     case "attack_start": 
-        show_debug_message(object_get_name(object_index) + " " + string(id) + ": State -> attack_start, Target: " + string(target_for_attack));
+        show_debug_message(object_get_name(object_index) + " " + string(id) + ": State -> attack_start (Physical/Item)...");
         origin_x = x; origin_y = y; 
-        
-        // --- Sprite Change ---
         sprite_before_attack = idle_sprite; 
-        if (sprite_exists(attack_sprite_asset)) { sprite_index = attack_sprite_asset; } 
-        else { sprite_index = idle_sprite; } 
-        image_index = 0; 
-        image_speed = attack_anim_speed; // Use the adjustable speed
-        show_debug_message(" -> Switched player sprite to attack: " + sprite_get_name(sprite_index) + " | Speed: " + string(image_speed));
-        // --- End Sprite Change ---
+        if (sprite_exists(attack_sprite_asset)) { sprite_index = attack_sprite_asset; } else { sprite_index = idle_sprite; } 
+        image_index = 0; image_speed = attack_anim_speed; 
         
-        if (script_exists(scr_TriggerScreenFlash)) { scr_TriggerScreenFlash(15, 0.7); }
+        // --- Determine FX based on Attack/Item ---
+        var current_fx_sprite = spr_pow; var current_fx_sound = snd_punch; 
+        if (stored_action_for_anim == "Attack") { 
+            if (script_exists(scr_GetWeaponAttackFX)) { var weapon_fx = scr_GetWeaponAttackFX(id); current_fx_sprite = weapon_fx.sprite; current_fx_sound = weapon_fx.sound; }
+        } else if (is_struct(stored_action_for_anim)) { // Item
+             current_fx_sprite = stored_action_for_anim.fx_sprite ?? spr_pow;
+             current_fx_sound = stored_action_for_anim.fx_sound ?? snd_punch;
+        }
 
-        // Calculate target position 
+        // --- Calculate Position & Match Scale ---
         var _target_x = origin_x; var _target_y = origin_y; 
-        if (instance_exists(target_for_attack)) { _target_x = target_for_attack.x; _target_y = target_for_attack.y; }
-        var _offset_dist = 192; var _dir_to_target = point_direction(x, y, _target_x, _target_y);
+        var target_exists = instance_exists(target_for_attack);
+        if (target_exists) { _target_x = target_for_attack.x; _target_y = target_for_attack.y; } 
+        var _offset_dist = 192; 
+        var _dir_to_target = point_direction(x, y, _target_x, _target_y);
         var _move_to_x = _target_x - lengthdir_x(_offset_dist, _dir_to_target);
         var _move_to_y = _target_y - lengthdir_y(_offset_dist, _dir_to_target);
+        if (target_exists) { image_xscale = target_for_attack.image_xscale; image_yscale = target_for_attack.image_yscale; }
         
         // --- Teleport ---
         x = _move_to_x; y = _move_to_y; 
-        show_debug_message(" -> Teleported to attack position"); 
-        
-        // --- Determine Attack Sound/FX Sprite ---
-        var current_fx_sprite = attack_fx_sprite; 
-        var current_fx_sound  = attack_fx_sound;  
-        if (stored_action_for_anim == "Attack") { 
-             if (script_exists(scr_GetWeaponAttackFX)) {
-                 var weapon_fx = scr_GetWeaponAttackFX(id); 
-                 if (sprite_exists(weapon_fx.sprite)) current_fx_sprite = weapon_fx.sprite;
-                 if (audio_exists(weapon_fx.sound)) current_fx_sound = weapon_fx.sound;
-             }
-        } else if (is_struct(stored_action_for_anim)) { 
-             if (variable_struct_exists(stored_action_for_anim, "fx_sprite") && sprite_exists(stored_action_for_anim.fx_sprite)) { current_fx_sprite = stored_action_for_anim.fx_sprite; }
-             if (variable_struct_exists(stored_action_for_anim, "fx_sound") && audio_exists(stored_action_for_anim.fx_sound)) { current_fx_sound = stored_action_for_anim.fx_sound; }
-        }
-        show_debug_message(" -> Determined FX Sprite: " + sprite_get_name(current_fx_sprite) + " | Sound: " + string(current_fx_sound));
-
-        // Play Sound
-        if (audio_exists(current_fx_sound)) { audio_play_sound(current_fx_sound, 10, false); } 
-        else { show_debug_message("Warning: Determined attack sound missing: " + string(current_fx_sound)); }
-
-        // Apply Damage/Effect 
+        if (audio_exists(current_fx_sound)) audio_play_sound(current_fx_sound, 10, false);
+                // --- <<< Apply Damage/Effect for Attack/Item >>> ---
         var _action_succeeded = false; 
-        if (stored_action_for_anim == "Attack") { if (script_exists(scr_PerformAttack)) _action_succeeded = scr_PerformAttack(id, target_for_attack); } 
-        else if (is_struct(stored_action_for_anim)) {
-             if (variable_struct_exists(stored_action_for_anim,"usable_in_battle")) { if (script_exists(scr_UseItem)) _action_succeeded = scr_UseItem(id, stored_action_for_anim, target_for_attack); } 
-             else if (variable_struct_exists(stored_action_for_anim,"effect")) { if (script_exists(scr_CastSkill)) _action_succeeded = scr_CastSkill(id, stored_action_for_anim, target_for_attack); }
+        if (stored_action_for_anim == "Attack") {
+            if (script_exists(scr_PerformAttack)) {
+                show_debug_message("    -> About to call scr_PerformAttack..."); // LOGGING
+                _action_succeeded = scr_PerformAttack(id, target_for_attack); 
+                show_debug_message("    -> Returned from scr_PerformAttack. Success: " + string(_action_succeeded)); // LOGGING
+            } else { show_debug_message("    -> ERROR: scr_PerformAttack missing!"); _action_succeeded = false;}
+        } 
+        else if (is_struct(stored_action_for_anim) && variable_struct_exists(stored_action_for_anim,"usable_in_battle")) { // Item
+             if (script_exists(scr_UseItem)) {
+                  show_debug_message("    -> About to call scr_UseItem..."); // LOGGING
+                  _action_succeeded = scr_UseItem(id, stored_action_for_anim, target_for_attack); 
+                  show_debug_message("    -> Returned from scr_UseItem. Success: " + string(_action_succeeded)); // LOGGING
+             } else { show_debug_message("    -> ERROR: scr_UseItem missing!"); _action_succeeded = false;}
         }
-        show_debug_message("    -> Action success flag: " + string(_action_succeeded));
-        
-        // --- Create Visual Effect ---
-        if (_action_succeeded) { 
-             if (object_exists(obj_attack_visual) && instance_exists(target_for_attack)) {
+        // --- <<< END Apply Damage/Effect >>> ---
+        // --- Create TARGET Visual Effect ---
+        // Note: Damage/effect was already applied by the manager before entering this state
+        if (target_exists) { 
+             if (object_exists(obj_attack_visual)) {
                  var _fx_x = target_for_attack.x; var _fx_y = target_for_attack.y - 32; 
-                 var _layer_id = layer_get_id("Instances"); 
+                 var _layer_id = layer_get_id("Instances"); // Back to Instances layer
                  if (_layer_id != -1) { 
                      var fx = instance_create_layer(_fx_x, _fx_y, _layer_id, obj_attack_visual); 
                      if (instance_exists(fx)) {
-                          // --- Set FX Sprite and Speed ---
                           fx.sprite_index = current_fx_sprite; 
-                          fx.image_speed = attack_anim_speed;  // <<< Use player's attack anim speed for the FX
-                          // --- End Set FX ---
+                          fx.image_speed = attack_anim_speed;
+                          fx.depth = target_for_attack.depth - 1; // Depth relative to target
                           fx.owner_instance = id; 
                           attack_animation_finished = false; 
-                          show_debug_message(" -> Created obj_attack_visual with sprite: " + sprite_get_name(fx.sprite_index) + " | Speed: " + string(fx.image_speed)); 
-                     } else { show_debug_message("ERROR: Failed to create obj_attack_visual!"); attack_animation_finished = true; } 
-                 } else { show_debug_message("ERROR: Layer 'Instances' not found for obj_attack_visual!"); attack_animation_finished = true; } 
-             } else { show_debug_message("Warning: obj_attack_visual missing or target invalid. Skipping visual."); attack_animation_finished = true; } 
-        } else { attack_animation_finished = true; }
+                          show_debug_message(" -> Created TARGET FX: " + sprite_get_name(fx.sprite_index));
+                     } else { attack_animation_finished = true; } 
+                 } else { attack_animation_finished = true; } 
+             } else { attack_animation_finished = true; } 
+        } else { attack_animation_finished = true; } // Target doesn't exist, finish immediately
 
-        combat_state = "attack_waiting"; 
-        show_debug_message(" -> Set state to attack_waiting");
+        combat_state = "waiting_for_effect"; // Go to shared waiting state
         break; 
 
-    case "attack_waiting":
+    // --- <<< NEW: Magic Casting Animation >>> ---
+    case "cast_start":
+        show_debug_message(object_get_name(object_index) + " " + string(id) + ": State -> cast_start (Magic)...");
+        origin_x = x; origin_y = y; // Store origin just in case
+        sprite_before_attack = idle_sprite; // Store sprite to return to
+        
+        // Set Casting Sprite & Speed
+        if (sprite_exists(casting_sprite_asset)) { sprite_index = casting_sprite_asset; } 
+        else { sprite_index = idle_sprite; } // Fallback
+        image_index = 0;
+        image_speed = attack_anim_speed; // Reuse speed variable
+        show_debug_message("    -> Set player sprite to CAST: " + sprite_get_name(sprite_index) + " | Speed: " + string(image_speed));
+        
+        // DO NOT TELEPORT
+        
+        // Get FX info from the skill struct
+        var skill_struct = stored_action_for_anim; // Action data is the skill struct
+        var target_fx_sprite = spr_pow;
+        var target_fx_sound = snd_punch;
+        var caster_fx_sprite = spr_caster_glow; // <<< ASSIGN YOUR CASTER EFFECT SPRITE HERE
+        
+        if (is_struct(skill_struct)) {
+             target_fx_sprite = variable_struct_get(skill_struct, "fx_sprite") ?? spr_pow;
+             target_fx_sound = variable_struct_get(skill_struct, "fx_sound") ?? snd_punch;
+             // Add caster_fx_sprite to skill struct later if you want different ones per spell
+        }
+        
+        // Play Sound
+        if (audio_exists(target_fx_sound)) { audio_play_sound(target_fx_sound, 10, false); }
+                // --- <<< Apply Damage/Effect for Skill >>> ---
+        var _action_succeeded = false; 
+        if (is_struct(stored_action_for_anim) && variable_struct_exists(stored_action_for_anim,"effect")) { // Check if it's a Skill
+             if (script_exists(scr_CastSkill)) {
+                  show_debug_message("    -> About to call scr_CastSkill..."); // LOGGING
+                  _action_succeeded = scr_CastSkill(id, stored_action_for_anim, target_for_attack); 
+                  show_debug_message("    -> Returned from scr_CastSkill. Success: " + string(_action_succeeded)); // LOGGING
+             } else { 
+                  show_debug_message("    -> ERROR: scr_CastSkill missing!"); 
+                  _action_succeeded = false; 
+             }
+        } else { // Should not happen if manager logic is correct, but safety check
+            show_debug_message("    -> ERROR: Action in cast_start is not a valid skill struct!");
+            _action_succeeded = false; 
+        }
+        // --- <<< END Apply Damage/Effect >>> ---
+        // Create Caster Visual Effect (at caster's location)
+        if (object_exists(obj_caster_visual) && sprite_exists(caster_fx_sprite)) {
+            var _caster_layer_id = layer_get_id("Instances"); // Or Instances_FX if you use it
+            if (_caster_layer_id != -1) {
+                 var caster_fx = instance_create_layer(x, y - 48, _caster_layer_id, obj_caster_visual); // Adjust Y offset
+                 if (instance_exists(caster_fx)) {
+                      caster_fx.sprite_index = caster_fx_sprite;
+                      caster_fx.image_speed = attack_anim_speed; // Use same speed?
+                      caster_fx.depth = depth - 1; // Draw over caster
+                      show_debug_message("    -> Created CASTER FX: " + sprite_get_name(caster_fx.sprite_index));
+                 }
+            }
+        } else { show_debug_message("    -> Warning: obj_caster_visual or its sprite missing."); }
+        
+        // Create TARGET Visual Effect (at target's location)
+        if (instance_exists(target_for_attack) && object_exists(obj_attack_visual)) {
+            var _fx_x = target_for_attack.x; var _fx_y = target_for_attack.y - 32;
+            var _layer_id = layer_get_id("Instances"); // Or Instances_FX
+            if (_layer_id != -1) {
+                 var fx = instance_create_layer(_fx_x, _fx_y, _layer_id, obj_attack_visual);
+                 if (instance_exists(fx)) {
+                      fx.sprite_index = target_fx_sprite;
+                      fx.image_speed = attack_anim_speed;
+                      fx.depth = target_for_attack.depth - 1; // Draw over target
+                      fx.owner_instance = id; // Still signal player when TARGET effect finishes
+                      attack_animation_finished = false; // Wait for TARGET effect
+                      show_debug_message("    -> Created TARGET FX: " + sprite_get_name(fx.sprite_index));
+                 } else { attack_animation_finished = true; }
+            } else { attack_animation_finished = true; }
+        } else {
+             show_debug_message("    -> Target invalid or obj_attack_visual missing, finishing immediately.");
+             attack_animation_finished = true; // No target effect, finish immediately
+        }
+
+        combat_state = "waiting_for_effect"; // Go to shared waiting state
+        break;
+
+    // --- <<< NEW/RENAMED Waiting State >>> ---
+    case "waiting_for_effect": // Replaces attack_waiting and cast_waiting
+        // Waits only for the TARGET effect (obj_attack_visual) to finish
         if (attack_animation_finished) {
-             show_debug_message(object_get_name(object_index) + " " + string(id) + ": Visual FX finished. State -> attack_return");
-            combat_state = "attack_return"; 
-            attack_animation_finished = false; 
+             show_debug_message(" -> Target Visual FX finished.");
+             // Need to know if we came from attack or cast to know where to return
+             // Check the current sprite index
+             if (sprite_index == attack_sprite_asset) {
+                  combat_state = "attack_return"; 
+                  show_debug_message("    -> Transitioning to attack_return");
+             } else if (sprite_index == casting_sprite_asset) {
+                  combat_state = "cast_return"; 
+                  show_debug_message("    -> Transitioning to cast_return");
+             } else { // Fallback / Error
+                  show_debug_message("    -> ERROR: Unknown sprite in waiting state! Returning to idle.");
+                  combat_state = "idle"; // Go directly idle to be safe
+                  if (instance_exists(obj_battle_manager)) obj_battle_manager.current_attack_animation_complete = true; // Signal manager anyway
+             }
+            attack_animation_finished = false; // Reset flag
         }
         break;
 
+    // Physical Attack Return
     case "attack_return":
         show_debug_message(object_get_name(object_index) + " " + string(id) + ": State -> attack_return");
         x = origin_x; y = origin_y; // Teleport Back
-        
-        // --- Restore Sprite ---
-        if (sprite_exists(sprite_before_attack)) { sprite_index = sprite_before_attack; } 
-        else { sprite_index = idle_sprite; } 
-        image_index = 0; 
-        image_speed = 0; // Stop animation
-        show_debug_message(" -> Restored sprite to: " + sprite_get_name(sprite_index));
-        
-        // --- Signal Manager & Reset ---
+        if (sprite_exists(sprite_before_attack)) { sprite_index = sprite_before_attack; } else { sprite_index = idle_sprite; } 
+        image_xscale = original_scale; image_yscale = original_scale; // Restore scale
+        image_index = 0; image_speed = 0; 
+        show_debug_message(" -> Restored sprite and scale"); 
         if (instance_exists(obj_battle_manager)) { obj_battle_manager.current_attack_animation_complete = true; }
         target_for_attack = noone; stored_action_for_anim = undefined; 
         combat_state = "idle"; 
         show_debug_message(" -> Returned to origin. State -> idle.");
         break; 
+        
+    // --- <<< NEW Casting Return State >>> ---
+    case "cast_return":
+         show_debug_message(object_get_name(object_index) + " " + string(id) + ": State -> cast_return");
+         // Restore Sprite (No teleport or scale change happened)
+         if (sprite_exists(sprite_before_attack)) { sprite_index = sprite_before_attack; } 
+         else { sprite_index = idle_sprite; } 
+         image_index = 0; image_speed = 0; 
+         show_debug_message(" -> Restored idle sprite after casting.");
+         
+         // Signal Manager & Reset
+         if (instance_exists(obj_battle_manager)) { obj_battle_manager.current_attack_animation_complete = true; }
+         target_for_attack = noone; stored_action_for_anim = undefined; 
+         combat_state = "idle"; 
+         show_debug_message(" -> Finished casting. State -> idle.");
+         break;
         
     case "dying": 
          image_alpha -= 0.05; 

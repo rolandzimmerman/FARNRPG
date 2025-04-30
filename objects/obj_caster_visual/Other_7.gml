@@ -1,0 +1,1 @@
+instance_destroy(); // Just destroy self, don't signal manager
