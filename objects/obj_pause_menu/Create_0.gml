@@ -6,6 +6,7 @@ menu_options = [
     "Items",       // Added
     "Spells",      // Added
     "Equipment",
+    "Party",
     "Load Game",
     "Quit",
     "Resume"       // Moved Resume to end for common placement

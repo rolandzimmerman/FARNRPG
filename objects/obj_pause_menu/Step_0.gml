@@ -92,7 +92,19 @@ if (confirm) { // This block only runs if 'Resume' was NOT the selected option
         // case "Save Game": 
         //     /* ... save logic ... */
         //     break;
-
+        case "Party":
+            show_debug_message("Pause Menu: Party selected.");
+            if (!instance_exists(obj_party_menu)) {
+                var layer_id = layer_get_id("Instances_GUI");
+                if (layer_id == -1) layer_id = layer_get_id("Instances");
+                var pm = instance_create_layer(0, 0, layer_id, obj_party_menu);
+                if (instance_exists(pm)) {
+                    pm.calling_menu = id;
+                    active = false;
+                    show_debug_message(" -> Created obj_party_menu, pause menu deactivated.");
+                }
+            }
+            break;
         case "Load Game":
             show_debug_message("Pause Menu: Load Game selected.");
              instance_activate_all(); // Ensure needed objects are active

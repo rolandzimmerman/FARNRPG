@@ -1,6 +1,6 @@
 {
   "$GMSound":"",
-  "%Name":"Cursor1",
+  "%Name":"snd_menu_select",
   "audioGroupId":{
     "name":"audiogroup_default",
     "path":"audiogroups/audiogroup_default",
@@ -10,16 +10,16 @@
   "compression":0,
   "conversionMode":0,
   "duration":0.028117914,
-  "name":"Cursor1",
+  "name":"snd_menu_select",
   "parent":{
-    "name":"RPGMaker",
-    "path":"folders/Sounds/RPGMaker.yy",
+    "name":"Sounds",
+    "path":"folders/Sounds.yy",
   },
   "preload":false,
   "resourceType":"GMSound",
   "resourceVersion":"2.0",
   "sampleRate":44100,
-  "soundFile":"Cursor1.mp3",
+  "soundFile":"snd_menu_select.mp3",
   "type":0,
   "volume":1.0,
 }
