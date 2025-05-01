@@ -7,7 +7,7 @@ function scr_ItemDatabase() {
     var default_item_fx_sprite = spr_item_effect_default ?? spr_pow; // e.g., A sparkle effect
     var default_item_fx_sound = snd_item_use ?? snd_sfx_heal;   // e.g., A generic item use jingle
     var default_bomb_fx_sprite = spr_fx_fireball ?? spr_pow;       // e.g., An explosion sprite
-    var default_bomb_fx_sound = snd_sfx_heal ?? snd_punch;     // e.g., An explosion sound
+    var default_bomb_fx_sound = snd_sfx_fire ?? snd_punch;     // e.g., An explosion sound
     var default_cure_fx_sprite = spr_fx_heal ?? spr_pow;            // e.g., A status cure sparkle
     var default_cure_fx_sound = snd_sfx_heal ?? snd_sfx_heal;           // e.g., A cure sound
 

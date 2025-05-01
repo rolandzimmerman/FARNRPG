@@ -9,7 +9,7 @@
   "bitRate":128,
   "compression":0,
   "conversionMode":0,
-  "duration":0.9142857,
+  "duration":0.79818594,
   "name":"snd_sfx_heal",
   "parent":{
     "name":"Sounds",
