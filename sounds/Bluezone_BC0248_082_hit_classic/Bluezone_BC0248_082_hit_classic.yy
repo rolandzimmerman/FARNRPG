@@ -1,0 +1,25 @@
+{
+  "$GMSound":"",
+  "%Name":"Bluezone_BC0248_082_hit_classic",
+  "audioGroupId":{
+    "name":"audiogroup_default",
+    "path":"audiogroups/audiogroup_default",
+  },
+  "bitDepth":1,
+  "bitRate":128,
+  "compression":0,
+  "conversionMode":0,
+  "duration":2.5613832,
+  "name":"Bluezone_BC0248_082_hit_classic",
+  "parent":{
+    "name":"Good; not used",
+    "path":"folders/Sounds/Good; not used.yy",
+  },
+  "preload":false,
+  "resourceType":"GMSound",
+  "resourceVersion":"2.0",
+  "sampleRate":44100,
+  "soundFile":"Bluezone_BC0248_082_hit_classic.wav",
+  "type":0,
+  "volume":1.0,
+}

@@ -14,101 +14,163 @@ var back    = keyboard_check_pressed(vk_escape)|| gamepad_button_check_pressed(d
 // --- State Machine ---
 switch (menu_state) {
     case "character_select":
+        // (This is your working character selection logic from before)
         var party_list_keys = variable_global_exists("party_members") ? global.party_members : [];
         var party_count = array_length(party_list_keys);
-        
         if (party_count > 0) {
-             // Navigation (Left/Right)
-             if (left) { character_index = (character_index - 1 + party_count) mod party_count; }
-             if (right) { character_index = (character_index + 1) mod party_count; }
-             
-             // Confirmation
-             if (confirm) {
+             if (left) { character_index = (character_index - 1 + party_count) mod party_count; /* Sound? */ }
+             if (right) { character_index = (character_index + 1) mod party_count; /* Sound? */ }
+             if (confirm) { 
                   selected_caster_key = party_list_keys[character_index];
                   show_debug_message("Spell Menu Field: Confirmed caster '" + selected_caster_key + "'");
-                  
-                  // --- <<< ADDED Detailed Logging for Spell List Population >>> ---
-                  usable_spells = []; 
-                  spell_index = 0;    
-                  
-                  show_debug_message("  -> Attempting to populate usable spells...");
-                  if (variable_global_exists("party_current_stats") && ds_exists(global.party_current_stats, ds_type_map)) { // Check map exists
-                       show_debug_message("    -> global.party_current_stats map exists.");
-                       if (ds_map_exists(global.party_current_stats, selected_caster_key)) { // Check key exists
-                           show_debug_message("    -> Found key '" + selected_caster_key + "' in map.");
-                           var caster_data = ds_map_find_value(global.party_current_stats, selected_caster_key); // Get data
-                           
-                           if (is_struct(caster_data)) { // Check if data is a struct
-                               show_debug_message("    -> Retrieved caster_data is a struct.");
-                               if (variable_struct_exists(caster_data, "skills")) { // Check if struct has 'skills'
-                                   show_debug_message("    -> 'skills' key exists in caster_data.");
-                                   if (is_array(caster_data.skills)) { // Check if 'skills' is an array
-                                       var all_skills = caster_data.skills;
-                                       var all_skills_len = array_length(all_skills);
-                                       show_debug_message("    -> 'skills' is an array. Length: " + string(all_skills_len)); // <<< CHECK THIS LENGTH
-                                       
-                                       // Loop through the character's skills array
-                                       for (var i = 0; i < all_skills_len; i++) {
-                                            var skill_struct = all_skills[i];
-                                            if (!is_struct(skill_struct)) {
-                                                 show_debug_message("      -> Item at index " + string(i) + " is not a struct. Skipping.");
-                                                 continue;
-                                            }
-                                            
-                                            var skill_name = variable_struct_get(skill_struct, "name") ?? "???";
-                                            // Check for the usable_in_field flag SAFELY
-                                            var field_usable = variable_struct_get(skill_struct, "usable_in_field") ?? false;
-                                            show_debug_message("      -> Checking skill[" + string(i) + "]: '" + skill_name + "'. usable_in_field = " + string(field_usable)); // <<< CHECK THIS VALUE FOR HEAL
-                                            
-                                            if (field_usable == true) { // Explicitly check for true
-                                                array_push(usable_spells, skill_struct); 
-                                                show_debug_message("          -> Added to usable_spells list.");
-                                            }
-                                       }
-                                   } else { show_debug_message("    -> ERROR: 'skills' field is NOT an array!"); }
-                               } else { show_debug_message("    -> ERROR: 'skills' key missing from caster_data struct!"); }
-                           } else { show_debug_message("    -> ERROR: Data retrieved for key is NOT a struct!"); }
-                       } else { show_debug_message("    -> ERROR: Key '" + selected_caster_key + "' NOT FOUND in global.party_current_stats map!"); }
-                  } else { show_debug_message("    -> ERROR: global.party_current_stats map DOES NOT EXIST or is invalid!"); }
-                  
-                  // Final check on populated list
-                  if (array_length(usable_spells) == 0) {
-                       show_debug_message("  -> FINAL: No field-usable spells found for " + selected_caster_key + ".");
-                       spell_index = -1; 
-                  } else {
-                       spell_index = 0; 
-                       show_debug_message("  -> FINAL: Populated usable_spells list. Count: " + string(array_length(usable_spells)));
-                  }
-                  // --- <<< END LOGGING >>> ---
-                  
-                  menu_state = "spell_select"; // Move to next state
+                  // Populate usable spells 
+                  usable_spells = []; spell_index = 0;    
+                  if (variable_global_exists("party_current_stats") && ds_exists(global.party_current_stats, ds_type_map)) { 
+                       if (ds_map_exists(global.party_current_stats, selected_caster_key)) { 
+                           var caster_data = ds_map_find_value(global.party_current_stats, selected_caster_key); 
+                           if (is_struct(caster_data) && variable_struct_exists(caster_data, "skills") && is_array(caster_data.skills)) { 
+                               var all_skills = caster_data.skills;
+                               for (var i = 0; i < array_length(all_skills); i++) {
+                                    var skill_struct = all_skills[i];
+                                    if (is_struct(skill_struct) && (variable_struct_get(skill_struct, "usable_in_field") ?? false)) {
+                                        array_push(usable_spells, skill_struct); 
+                                    }
+                               }
+                           } 
+                       } 
+                  } 
+                  if (array_length(usable_spells) == 0) { spell_index = -1; show_debug_message("  -> FINAL: No field-usable spells found."); } 
+                  else { spell_index = 0; show_debug_message("  -> FINAL: Populated usable_spells list. Count: " + string(array_length(usable_spells))); }
+                  menu_state = "spell_select"; 
                   show_debug_message(" -> Transitioning to spell_select state.");
              }
         } 
-         
-        // Handle Back/Cancel - Return to Pause Menu
-        if (back) {
-            // (Your existing cancel logic to return to pause menu - uses instance_activate_all)
-            show_debug_message("Spell Menu Field Char Select: Back pressed. Returning to calling menu.");
-            if (instance_exists(calling_menu)) { instance_activate_all(); if(variable_instance_exists(calling_menu, "active")) { calling_menu.active = true; } } 
-            else { if(instance_exists(obj_game_manager)) obj_game_manager.game_state = "playing"; instance_activate_all(); }
-            instance_destroy(); exit; 
-        }
-        break; // End character_select state
+        // Cancel logic
+        if (back) { if (instance_exists(calling_menu)) { instance_activate_all(); if(variable_instance_exists(calling_menu, "active")) { calling_menu.active = true; } } else { /* Unpause */ } instance_destroy(); exit; }
+        break; 
         
     case "spell_select":
-        // (Existing navigation and placeholder confirm logic)
         var spell_count = array_length(usable_spells);
         if (spell_count > 0) { 
-            if (up) { spell_index = (spell_index - 1 + spell_count) mod spell_count; }
-            if (down) { spell_index = (spell_index + 1) mod spell_count; }
-            if (confirm) { show_debug_message("Spell Menu Field: Confirmed spell selection (Index: " + string(spell_index) + "). Functionality WIP."); }
+            // Navigation
+            if (up) { spell_index = (spell_index - 1 + spell_count) mod spell_count; /* Sound? */ }
+            if (down) { spell_index = (spell_index + 1) mod spell_count; /* Sound? */ }
+            
+            // --- <<< ADDED Spell Confirmation Logic >>> ---
+            if (confirm && spell_index != -1) { 
+                var selected_spell = usable_spells[spell_index];
+                show_debug_message("Spell Menu Field: Confirmed spell '" + (selected_spell.name ?? "???") + "'");
+
+                // Check MP Cost 
+                var cost = selected_spell.cost ?? 0;
+                var caster_data = ds_map_find_value(global.party_current_stats, selected_caster_key); 
+                var current_mp = variable_struct_get(caster_data, "mp") ?? 0;
+                
+                if (current_mp >= cost) { 
+                    show_debug_message("  -> MP Check OK (Have " + string(current_mp) + ", Need " + string(cost) + ")");
+                    var targetType = variable_struct_get(selected_spell, "target_type") ?? "enemy"; 
+                    
+                    if (targetType == "ally" || targetType == "self") {
+                         target_party_index = (targetType == "self") ? character_index : 0; 
+                         menu_state = "target_select_ally"; 
+                         show_debug_message("  -> Transitioning to target_select_ally state.");
+                    } 
+                    else if (targetType == "all_allies") {
+                         show_debug_message("  -> Applying '" + selected_spell.name + "' to all allies... (Effect application WIP)");
+                         // Placeholder: Needs call to updated scr_CastSkillField in loop + MP deduction
+                         menu_state = "spell_select"; // Stay here for now
+                    } 
+                    else { show_debug_message("  -> Cannot use this spell target type ('" + targetType + "') outside battle."); /* Fail Sound? */ }
+                } else { show_debug_message("  -> MP Check FAILED (Have " + string(current_mp) + ", Need " + string(cost) + ")"); /* Fail Sound? */ }
+            } // End Confirm
+            // --- <<< END ADDED Logic >>> ---
+
         } else { if (confirm) { /* Fail sound? */ } }
-        if (back) { menu_state = "character_select"; usable_spells = []; spell_index = 0; selected_caster_key = ""; }
+
+        // Handle Back/Cancel - Return to Character Select
+        if (back) {
+             show_debug_message("Spell Menu Field Spell Select: Back pressed. Returning to character select.");
+             menu_state = "character_select";
+             usable_spells = []; spell_index = 0; selected_caster_key = "";
+             // audio_play_sound(snd_cancel, 0, false);
+        }
         break; // End spell_select state
         
+    // --- <<< ADDED Target Selection Logic >>> ---
     case "target_select_ally":
-         // (Existing placeholder logic)
-         if (back) { menu_state = "spell_select"; }
+         var party_list_keys = global.party_members ?? [];
+         var party_count = array_length(party_list_keys);
+         if (party_count == 0) { menu_state = "spell_select"; break; } // Go back if no party
+         target_party_index = clamp(target_party_index, 0, max(0, party_count - 1)); 
+
+         // Navigation (Using Up/Down)
+         if (up) { target_party_index = (target_party_index - 1 + party_count) mod party_count; /* Add skip invalid target logic? */ /* Play Sound? */ }
+         if (down) { target_party_index = (target_party_index + 1) mod party_count; /* Add skip invalid target logic? */ /* Play Sound? */ }
+         
+         // Confirmation - Attempt to Cast Spell
+         if (confirm) {
+             var target_key = party_list_keys[target_party_index];
+             // Ensure spell_index is valid (check against usable_spells array)
+             if (spell_index < 0 || spell_index >= array_length(usable_spells)) {
+                  show_debug_message("ERROR: Invalid spell_index in target_select_ally confirm!");
+                  menu_state = "spell_select"; break; // Go back if error
+             }
+             var selected_spell = usable_spells[spell_index]; 
+             var caster_data = ds_map_find_value(global.party_current_stats, selected_caster_key); 
+             var target_data_struct = ds_map_find_value(global.party_current_stats, target_key); 
+             
+             show_debug_message("Spell Menu Field Target: Confirmed target key '" + target_key + "' for spell '" + (selected_spell.name ?? "???") + "'");
+             
+             var can_use_on_target = true; 
+             // Validate Target based on persistent data
+             if (!is_struct(target_data_struct)) { can_use_on_target = false; show_debug_message("   -> ERROR: Target persistent data invalid."); } 
+             else {
+                 var target_hp = variable_struct_get(target_data_struct, "hp") ?? 0;
+                 if (selected_spell.effect == "heal_hp" && target_hp <= 0) { can_use_on_target = false; show_debug_message("   -> Cannot use Heal on KO'd target."); }
+                 // Add other checks (Revive, etc.)
+             }
+
+             // Attempt to Cast Spell using scr_CastSkillField if Target Valid
+             if (can_use_on_target && script_exists(scr_CastSkillField)) {
+                 show_debug_message("   -> Attempting to call scr_CastSkillField (CasterKey=" + selected_caster_key + ", TargetKey=" + target_key + ")");
+                 var cast_success = scr_CastSkillField(selected_caster_key, selected_spell, target_key); 
+                 show_debug_message("   -> scr_CastSkillField returned: " + string(cast_success));
+                 
+                 if (cast_success) { 
+                    // --- <<< ADDED: Play Heal Sound >>> ---
+                     // Check if the successfully cast spell was a healing spell
+                     if (selected_spell.effect == "heal_hp") { 
+                          if (audio_exists(snd_sfx_heal)) { // Make sure sound exists
+                              audio_play_sound(snd_sfx_heal, 10, false); 
+                              show_debug_message("   -> Played heal sound (snd_sfx_heal).");
+                          } else { show_debug_message("   -> WARNING: snd_sfx_heal asset missing!"); }
+                     } 
+                     // Add else if for other spell sounds here based on selected_spell.effect if needed
+                     // --- <<< END ADDED SOUND >>> ---
+                     // Deduct MP from persistent data upon success
+                     var cost = selected_spell.cost ?? 0;
+                     if (is_struct(caster_data)) { 
+                          caster_data.mp = max(0, caster_data.mp - cost); 
+                          ds_map_replace(global.party_current_stats, selected_caster_key, caster_data); // Save change back to map
+                          show_debug_message("   -> Deducted MP. Caster MP now: " + string(caster_data.mp));
+                          // Play success sound?
+                     } else { show_debug_message("   -> ERROR: Could not find caster data to deduct MP!"); }
+                 } else { show_debug_message("   -> Spell use failed (check logs from scr_CastSkillField)."); /* Play fail sound? */ }
+             } else if (!can_use_on_target) { /* Fail message already shown, play fail sound? */ }
+             else { show_debug_message("   -> ERROR: scr_CastSkillField script missing!"); }
+
+             // Return to spell selection after attempt
+             menu_state = "spell_select";
+             show_debug_message("   -> Returning to spell_select state.");
+             
+         } // End Confirm
+         
+         // Handle Cancellation
+         if (back) {
+              show_debug_message("Spell Menu Field Target: Back pressed. Returning to spell select.");
+              menu_state = "spell_select";
+              // audio_play_sound(snd_cancel, 0, false);
+         }
          break; // End target_select_ally state
+     // --- <<< END ADDED Logic >>> ---
 }

@@ -1,0 +1,25 @@
+{
+  "$GMSound":"",
+  "%Name":"Bluezone_BC0247_018_ambience_organic_rain",
+  "audioGroupId":{
+    "name":"audiogroup_default",
+    "path":"audiogroups/audiogroup_default",
+  },
+  "bitDepth":1,
+  "bitRate":128,
+  "compression":0,
+  "conversionMode":0,
+  "duration":31.866983,
+  "name":"Bluezone_BC0247_018_ambience_organic_rain",
+  "parent":{
+    "name":"BluezoneFreeSounds",
+    "path":"folders/Sounds/BluezoneFreeSounds.yy",
+  },
+  "preload":false,
+  "resourceType":"GMSound",
+  "resourceVersion":"2.0",
+  "sampleRate":44100,
+  "soundFile":"Bluezone_BC0247_018_ambience_organic_rain.wav",
+  "type":0,
+  "volume":1.0,
+}

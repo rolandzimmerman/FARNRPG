@@ -1,0 +1,25 @@
+{
+  "$GMSound":"",
+  "%Name":"Bluezone_BC0241_interface_beep_074",
+  "audioGroupId":{
+    "name":"audiogroup_default",
+    "path":"audiogroups/audiogroup_default",
+  },
+  "bitDepth":1,
+  "bitRate":128,
+  "compression":0,
+  "conversionMode":0,
+  "duration":0.5291383,
+  "name":"Bluezone_BC0241_interface_beep_074",
+  "parent":{
+    "name":"BluezoneFreeSounds",
+    "path":"folders/Sounds/BluezoneFreeSounds.yy",
+  },
+  "preload":false,
+  "resourceType":"GMSound",
+  "resourceVersion":"2.0",
+  "sampleRate":44100,
+  "soundFile":"Bluezone_BC0241_interface_beep_074.wav",
+  "type":0,
+  "volume":1.0,
+}
