@@ -62,6 +62,18 @@ function scr_BuildCharacterDB() {
         resistances: variable_clone(base_resistances, true), character_key: "izzy",
         battle_sprite: spr_izzy_battle, attack_sprite: spr_izzy_attack, cast_sprite: spr_izzy_cast, item_sprite: spr_izzy_item // <<< ADDED
     });
+    
+    // --- lexy ("lexy") - Thief ---
+    ds_map_add(_char_map, "lexy", {
+        name: "lexy", class: "Thief", hp: 38, maxhp: 38, mp: 15, maxmp: 15, atk: 12, def: 6, matk: 5, mdef: 4, spd: 12, luk: 10, level: 1, xp: 0, xp_require: 100, overdrive: 0, overdrive_max: 100, 
+        skills: [ 
+            { name: "Steal", cost: 0, effect: "steal_item", target_type: "enemy", animation_type: "physical", fx_sprite: default_status_fx, fx_sound: default_status_snd }, 
+            { name: "Quick Attack", cost: 3, effect: "damage_enemy", target_type: "enemy", damage: 10, element: "physical", power_stat: "atk", animation_type: "physical", fx_sprite: default_slash_fx, fx_sound: snd_punch }, 
+        ], 
+        equipment: { weapon: "iron_dagger", offhand: noone, armor: noone, helm: noone, accessory: "thief_gloves" }, 
+        resistances: variable_clone(base_resistances, true), character_key: "lexy",
+        battle_sprite: spr_lexy_battle, attack_sprite: spr_lexy_attack, cast_sprite: spr_lexy_cast, item_sprite: spr_lexy_item // <<< ADDED
+    });
 
     show_debug_message("Character Database Initialized with " + string(ds_map_size(_char_map)) + " characters.");
     return _char_map;
