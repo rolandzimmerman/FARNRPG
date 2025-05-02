@@ -132,6 +132,16 @@ if (confirm) { // This block only runs if 'Resume' was NOT the selected option
                  } else { show_debug_message("ERROR: Cannot find layer for equipment menu!"); break; }
              } else { show_debug_message(" -> WARNING: Equipment menu already exists!"); }
             break; 
+        case "Settings":
+            show_debug_message("Pause Menu: Settings selected.");
+            var layer_id = layer_get_id("Instances_GUI");
+            if (layer_id == -1) layer_id = layer_get_id("Instances");
+            var sm = instance_create_layer(0, 0, layer_id, obj_settings_menu);
+            if (instance_exists(sm)) {
+                sm.calling_menu = id;
+                active = false;
+            }
+            break;
             
         // Note: "Resume" is handled by the 'back' check earlier, so no case needed here.
             

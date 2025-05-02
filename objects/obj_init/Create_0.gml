@@ -105,3 +105,6 @@ show_debug_message("========================================");
 //if (!instance_exists(obj_minimap)) {
 //    instance_create_layer(0, 0, "Instances", obj_minimap);
 //}
+global.display_mode = "Windowed"; // or "Fullscreen", "Borderless"
+global.sfx_volume = 1;    // 0.0 to 1.0
+global.music_volume = 1;  // 0.0 to 1.0
