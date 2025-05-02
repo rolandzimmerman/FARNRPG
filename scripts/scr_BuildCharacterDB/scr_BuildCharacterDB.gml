@@ -2,7 +2,7 @@
 /// @description Returns a DS Map containing base data for all playable characters.
 function scr_BuildCharacterDB() {
     var _char_map = ds_map_create();
-    var base_resistances = { physical: 0, fire: 0, ice: 0, lightning: 0, poison: 0, holy: 0, dark: 0 }; 
+    var base_resistances = { physical: -2, fire: 0, ice: 0, lightning: 0, poison: 0, holy: 0, dark: 0 }; 
     var base_equipment = { weapon: noone, offhand: noone, armor: noone, helm: noone, accessory: noone }; 
 
     // Default FX Placeholders

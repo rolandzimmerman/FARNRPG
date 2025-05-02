@@ -65,6 +65,7 @@
     {"id":{"name":"obj_action_parentbackup","path":"objects/obj_action_parentbackup/obj_action_parentbackup.yy",},},
     {"id":{"name":"obj_action_runbackup","path":"objects/obj_action_runbackup/obj_action_runbackup.yy",},},
     {"id":{"name":"obj_attack_visual","path":"objects/obj_attack_visual/obj_attack_visual.yy",},},
+    {"id":{"name":"obj_battle_animation","path":"objects/obj_battle_animation/obj_battle_animation.yy",},},
     {"id":{"name":"obj_battle_enemy","path":"objects/obj_battle_enemy/obj_battle_enemy.yy",},},
     {"id":{"name":"obj_battle_enemybackup","path":"objects/obj_battle_enemybackup/obj_battle_enemybackup.yy",},},
     {"id":{"name":"obj_battle_manager","path":"objects/obj_battle_manager/obj_battle_manager.yy",},},
@@ -584,5 +585,6 @@
   "templateType":"game",
   "TextureGroups":[
     {"$GMTextureGroup":"","%Name":"Default","autocrop":true,"border":2,"compressFormat":"bz2","customOptions":"","directory":"","groupParent":null,"isScaled":true,"loadType":"default","mipsToGenerate":0,"name":"Default","resourceType":"GMTextureGroup","resourceVersion":"2.0","targets":-1,},
+    {"$GMTextureGroup":"","%Name":"BattleAssets","autocrop":true,"border":2,"compressFormat":"bz2","customOptions":"","directory":"","groupParent":null,"isScaled":true,"loadType":"default","mipsToGenerate":0,"name":"BattleAssets","resourceType":"GMTextureGroup","resourceVersion":"2.0","targets":-1,},
   ],
 }

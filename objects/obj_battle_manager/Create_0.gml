@@ -172,3 +172,4 @@ if (script_exists(scr_CalculateTurnOrderDisplay)) {
 }
 global.battle_state = "calculate_turn"; 
 show_debug_message("🧱 Battle Manager Create DONE. Initial State: " + global.battle_state);
+battle_fx_surface = -1;

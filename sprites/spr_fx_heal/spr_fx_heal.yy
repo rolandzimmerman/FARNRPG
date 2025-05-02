@@ -91,8 +91,8 @@
   "swatchColours":null,
   "swfPrecision":0.5,
   "textureGroupId":{
-    "name":"Default",
-    "path":"texturegroups/Default",
+    "name":"BattleAssets",
+    "path":"texturegroups/BattleAssets",
   },
   "type":0,
   "VTile":false,

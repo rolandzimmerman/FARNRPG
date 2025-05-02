@@ -38,6 +38,7 @@
     {"name":"obj_action_parentbackup","order":4,"path":"objects/obj_action_parentbackup/obj_action_parentbackup.yy",},
     {"name":"obj_action_runbackup","order":5,"path":"objects/obj_action_runbackup/obj_action_runbackup.yy",},
     {"name":"obj_attack_visual","order":6,"path":"objects/obj_attack_visual/obj_attack_visual.yy",},
+    {"name":"obj_battle_animation","order":7,"path":"objects/obj_battle_animation/obj_battle_animation.yy",},
     {"name":"obj_battle_enemy","order":1,"path":"objects/obj_battle_enemy/obj_battle_enemy.yy",},
     {"name":"obj_battle_enemybackup","order":3,"path":"objects/obj_battle_enemybackup/obj_battle_enemybackup.yy",},
     {"name":"obj_battle_managerbackup","order":2,"path":"objects/obj_battle_managerbackup/obj_battle_managerbackup.yy",},

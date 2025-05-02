@@ -11,6 +11,13 @@ if (screen_flash_alpha > 0) {
     draw_set_alpha(1); // Reset alpha
     draw_set_color(c_white); // Reset color
 }
+if (!surface_exists(battle_fx_surface)) {
+    battle_fx_surface = surface_create(room_width, room_height);
+    surface_set_target(battle_fx_surface);
+    draw_clear_alpha(c_black, 0); // Transparent background
+    surface_reset_target();
+}
+
 
 // Potentially draw manager-specific debug info here if needed
 // draw_text(10, display_get_gui_height() - 30, "Manager State: " + global.battle_state);
