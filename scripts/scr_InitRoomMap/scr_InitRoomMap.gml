@@ -22,18 +22,18 @@ function scr_InitRoomMap() {
     var r1 = Room1;
     var m1 = ds_map_create();
     ds_map_add(m1, "left",  Room2);
-    ds_map_add(m1, "right", Room2);
-    ds_map_add(m1, "above", Room2);
-    ds_map_add(m1, "below", Room2);
+    ds_map_add(m1, "right", noone);
+    ds_map_add(m1, "above", noone);
+    ds_map_add(m1, "below", noone);
     ds_map_add(global.room_map, r1, m1);
 
     // Room2 connections
     var r2 = Room2;
     var m2 = ds_map_create();
-    ds_map_add(m2, "left",  Room1);
+    ds_map_add(m2, "left",  noone);
     ds_map_add(m2, "right", Room1);
-    ds_map_add(m2, "above", Room1);
-    ds_map_add(m2, "below", Room1);
+    ds_map_add(m2, "above", noone);
+    ds_map_add(m2, "below", noone);
     ds_map_add(global.room_map, r2, m2);
 
     // …add more rooms here…

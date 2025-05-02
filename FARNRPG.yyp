@@ -93,6 +93,7 @@
     {"id":{"name":"obj_player","path":"objects/obj_player/obj_player.yy",},},
     {"id":{"name":"obj_popup_damage","path":"objects/obj_popup_damage/obj_popup_damage.yy",},},
     {"id":{"name":"obj_save_point","path":"objects/obj_save_point/obj_save_point.yy",},},
+    {"id":{"name":"obj_spawn_point","path":"objects/obj_spawn_point/obj_spawn_point.yy",},},
     {"id":{"name":"obj_spell_menu_field","path":"objects/obj_spell_menu_field/obj_spell_menu_field.yy",},},
     {"id":{"name":"rm_battle","path":"rooms/rm_battle/rm_battle.yy",},},
     {"id":{"name":"Room1","path":"rooms/Room1/Room1.yy",},},

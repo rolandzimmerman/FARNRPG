@@ -63,6 +63,7 @@
     {"name":"obj_pause_menu","order":3,"path":"objects/obj_pause_menu/obj_pause_menu.yy",},
     {"name":"obj_popup_damage","order":5,"path":"objects/obj_popup_damage/obj_popup_damage.yy",},
     {"name":"obj_save_point","order":16,"path":"objects/obj_save_point/obj_save_point.yy",},
+    {"name":"obj_spawn_point","order":22,"path":"objects/obj_spawn_point/obj_spawn_point.yy",},
     {"name":"obj_spell_menu_field","order":4,"path":"objects/obj_spell_menu_field/obj_spell_menu_field.yy",},
     {"name":"rm_battle","order":3,"path":"rooms/rm_battle/rm_battle.yy",},
     {"name":"Room2","order":2,"path":"rooms/Room2/Room2.yy",},
