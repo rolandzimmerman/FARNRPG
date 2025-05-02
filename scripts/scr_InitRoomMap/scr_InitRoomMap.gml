@@ -40,3 +40,8 @@ function scr_InitRoomMap() {
 
     show_debug_message("Room Map Initialized. Rooms: " + string(ds_map_size(global.room_map)));
 }
+// Layout coordinates for minimap display (example layout)
+global.room_coords = ds_map_create();
+ds_map_add(global.room_coords, Room1, {x: 1, y: 1});
+ds_map_add(global.room_coords, Room2, {x: 0, y: 1});
+// Add more as needed

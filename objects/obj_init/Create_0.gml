@@ -102,3 +102,6 @@ show_debug_message("========================================");
 
 // (Make sure obj_init runs *before* obj_player is created, typically by room order or creation code)
 
+//if (!instance_exists(obj_minimap)) {
+//    instance_create_layer(0, 0, "Instances", obj_minimap);
+//}
