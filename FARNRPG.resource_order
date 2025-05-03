@@ -460,6 +460,8 @@
     {"name":"spr_claude_battle","order":2,"path":"sprites/spr_claude_battle/spr_claude_battle.yy",},
     {"name":"spr_claude_cast","order":21,"path":"sprites/spr_claude_cast/spr_claude_cast.yy",},
     {"name":"spr_claude_item","order":29,"path":"sprites/spr_claude_item/spr_claude_item.yy",},
+    {"name":"spr_dead_ash","order":16,"path":"sprites/spr_dead_ash/spr_dead_ash.yy",},
+    {"name":"spr_death_ash","order":15,"path":"sprites/spr_death_ash/spr_death_ash.yy",},
     {"name":"spr_defend","order":27,"path":"sprites/spr_defend/spr_defend.yy",},
     {"name":"spr_dpad","order":29,"path":"sprites/spr_dpad/spr_dpad.yy",},
     {"name":"spr_enemy_goblin","order":4,"path":"sprites/spr_enemy_goblin/spr_enemy_goblin.yy",},
