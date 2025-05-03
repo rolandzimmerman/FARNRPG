@@ -173,3 +173,6 @@ if (script_exists(scr_CalculateTurnOrderDisplay)) {
 global.battle_state = "calculate_turn"; 
 show_debug_message("🧱 Battle Manager Create DONE. Initial State: " + global.battle_state);
 battle_fx_surface = -1;
+
+// <<< NEW: Initialize flag to ignore B for one frame when cancelling target select >>>
+global.battle_ignore_b = false;

@@ -150,6 +150,8 @@ switch (global.battle_state) {
               if (is_struct(stored_action_data) && variable_struct_exists(stored_action_data, "usable_in_battle") && script_exists(scr_AddInventoryItem)) { if (variable_struct_exists(stored_action_data, "item_key")) scr_AddInventoryItem(stored_action_data.item_key, 1); }
               var _prev = "player_input";
               if (is_struct(stored_action_data)) { if (variable_struct_exists(stored_action_data,"usable_in_battle")) _prev="item_select"; else if (variable_struct_exists(stored_action_data,"cost")) _prev="skill_select"; }
+              // <<< NEW: consume this B press so it doesn’t immediately trigger Defend >>>
+              global.battle_ignore_b = true;
               global.battle_state = _prev; 
               stored_action_data = undefined; selected_target_id = noone;
          }

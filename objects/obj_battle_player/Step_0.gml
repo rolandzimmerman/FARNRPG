@@ -68,6 +68,11 @@ if (variable_global_exists("active_party_member_index")
         var U = keyboard_check_pressed(vk_up)      || gamepad_button_check_pressed(P, gp_padu);   // Up
         var D = keyboard_check_pressed(vk_down)    || gamepad_button_check_pressed(P, gp_padd);   // Down
 
+        // <<< NEW: if we just cancelled a TargetSelect, ignore this B press and clear the flag >>>
+        if (global.battle_ignore_b) {
+            B = false;
+            global.battle_ignore_b = false;
+        }
         // Process based on Manager's State
         switch (st) {
             // ==================================================================
