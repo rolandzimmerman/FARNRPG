@@ -296,45 +296,93 @@ switch (combat_state) {
         break; 
 
     // --- Magic Casting Animation ---
-    case "cast_start":
-        show_debug_message(object_get_name(object_index) + " " + string(id) + ": State -> cast_start (Magic)...");
-        origin_x = x; origin_y = y; 
-        sprite_before_attack = idle_sprite; 
-        if (sprite_exists(casting_sprite_asset)) { sprite_index = casting_sprite_asset; } else { sprite_index = idle_sprite; } 
-        image_index = 0; image_speed = attack_anim_speed; 
-        
-        // Get FX info from skill struct
-        var skill_struct = stored_action_for_anim; 
-        var target_fx_sprite = spr_pow; var target_fx_sound = snd_punch; var caster_fx_sprite = spr_caster_glow; 
-        if (is_struct(skill_struct)) { target_fx_sprite = skill_struct.fx_sprite ?? spr_pow; target_fx_sound = skill_struct.fx_sound ?? snd_punch; /* Caster FX? */ }
-        if (audio_exists(target_fx_sound)) { audio_play_sound(target_fx_sound, 10, false); }
-        
-        // Create Caster Visual Effect 
-        if (object_exists(obj_caster_visual) && sprite_exists(caster_fx_sprite)) {
-             var _caster_layer_id = layer_get_id("Instances_FX"); 
-             if (_caster_layer_id != -1) {
-                 var caster_fx = instance_create_layer(x, y - 48, _caster_layer_id, obj_caster_visual); 
-                 if (instance_exists(caster_fx)) { caster_fx.sprite_index = caster_fx_sprite; caster_fx.image_speed = attack_anim_speed; caster_fx.depth = depth - 1; }
-             }
-        } 
-        
-        // Create TARGET Visual Effect 
-        // Note: Effect (damage/heal) was ALREADY applied by manager
-        if (instance_exists(target_for_attack) && object_exists(obj_attack_visual)) {
-            var _fx_x = target_for_attack.x; var _fx_y = target_for_attack.y - 32;
-            var _layer_id = layer_get_id("Instances_FX"); 
-            if (_layer_id != -1) {
-                 var fx = instance_create_layer(_fx_x, _fx_y, _layer_id, obj_attack_visual);
-                 if (instance_exists(fx)) {
-                      fx.sprite_index = target_fx_sprite; fx.image_speed = attack_anim_speed;
-                      fx.depth = target_for_attack.depth - 100; fx.owner_instance = id; 
-                      attack_animation_finished = false; // Wait for this target FX
-                 } else { attack_animation_finished = true; }
-            } else { attack_animation_finished = true; }
-        } else { attack_animation_finished = true; } // Finish immediately if no target
+/// obj_battle_player :: Step Event (replace your cast_start case with this)
+case "cast_start":
+    // Log entry
+    show_debug_message("obj_battle_player " + string(id) + ": State -> cast_start (Magic)");
 
-        combat_state = "waiting_for_effect"; 
-        break;
+    // 1) Prepare casting pose
+    origin_x = x;
+    origin_y = y;
+    sprite_before_attack = idle_sprite;
+    if (sprite_exists(casting_sprite_asset)) {
+        sprite_index = casting_sprite_asset;
+    } else {
+        sprite_index = idle_sprite;
+    }
+    image_index = 0;
+    image_speed = attack_anim_speed;
+
+    // 2) Retrieve character info (contains cast_fx_sprite)
+    var info = scr_FetchCharacterInfo(character_key);
+    if (!is_struct(info)) {
+        show_debug_message("❌ ERROR: scr_FetchCharacterInfo returned undefined for '" + character_key + "'");
+    }
+
+    // 3) Select the FX sprite
+    var caster_fx = spr_caster_glow;
+    if (is_struct(info) && sprite_exists(info.cast_fx_sprite)) {
+        caster_fx = info.cast_fx_sprite;
+    }
+    show_debug_message("    → Using cast FX sprite: " 
+                     + string(caster_fx)
+                     + " (" + sprite_get_name(caster_fx) + ")");
+
+    // 4) Play the skill’s sound
+    var skill_struct = stored_action_for_anim;
+    var sfx = snd_punch;
+    if (is_struct(skill_struct) && variable_struct_exists(skill_struct, "fx_sound")) {
+        sfx = skill_struct.fx_sound;
+    }
+    if (audio_exists(sfx)) audio_play_sound(sfx, 10, false);
+
+    // 5) Spawn the caster visual effect
+    if (object_exists(obj_caster_visual)) {
+        var lid = layer_get_id("Instances_FX");
+        if (lid != -1) {
+            var fx = instance_create_layer(x, y - 48, lid, obj_caster_visual);
+            if (instance_exists(fx)) {
+                fx.sprite_index = caster_fx;
+                fx.image_speed  = attack_anim_speed;
+                fx.depth        = depth - 1;
+            }
+        }
+    }
+
+    // 6) Spawn the target visual effect (unchanged)
+    var target_fx_sp = spr_pow;
+    if (is_struct(skill_struct) && variable_struct_exists(skill_struct, "fx_sprite")) {
+        target_fx_sp = skill_struct.fx_sprite;
+    }
+    if (instance_exists(target_for_attack) && object_exists(obj_attack_visual)) {
+        var lid2 = layer_get_id("Instances_FX");
+        var fxt  = instance_create_layer(
+            target_for_attack.x,
+            target_for_attack.y - 32,
+            lid2,
+            obj_attack_visual
+        );
+        if (instance_exists(fxt)) {
+            fxt.sprite_index   = target_fx_sp;
+            fxt.image_speed    = attack_anim_speed;
+            fxt.depth          = target_for_attack.depth - 100;
+            fxt.owner_instance = id;
+        } else {
+            attack_animation_finished = true;
+        }
+    } else {
+        attack_animation_finished = true;
+    }
+
+    // 7) Advance to waiting state
+    combat_state = "waiting_for_effect";
+    break;
+
+
+
+
+
+
         case "item_select":
              var items = global.battle_usable_items ?? []; var c = array_length(items);
               if (c > 0) {
