@@ -39,4 +39,8 @@ turnCounter = 0;
 attack_fx_sprite = spr_pow;  
 attack_fx_sound = snd_punch; 
 
+// --- ITEM DRAW OFFSETS (tweak once here) ---
+item_offset_x = 16;
+item_offset_y = -8;
+
 show_debug_message("--- obj_battle_player Create END ---");

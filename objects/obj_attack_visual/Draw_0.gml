@@ -1,7 +1,18 @@
-/// Draw the visual effect
-// <<< ADDED LOG >>>
-// This will spam the log, but confirms drawing is attempted
-// show_debug_message(">>> obj_attack_visual Draw Event: " + string(id) + " at " + string(x) + "," + string(y) + " Sprite: " + sprite_get_name(sprite_index) + " Frame: " + string(image_index));
-// <<< END LOG >>>
+/// obj_attack_visual :: Draw Event
+// 1) draw the FX on the target
+draw_self();
 
-draw_self(); // Draw the assigned sprite
+// 2) draw the item’s icon over the caster’s hand (with scale)
+if (item_icon >= 0 && instance_exists(owner_instance)) {
+    draw_sprite_ext(
+        item_icon,                   // the inventory/potion icon
+        0,                           // frame 0
+        owner_instance.x + hand_offset_x,
+        owner_instance.y + hand_offset_y,
+        owner_instance.image_xscale * item_icon_scale,
+        owner_instance.image_yscale * item_icon_scale,
+        owner_instance.image_angle,
+        c_white,
+        1                            // full opacity
+    );
+}

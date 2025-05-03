@@ -390,44 +390,73 @@ switch (combat_state) {
               
               break; // End "item_select" case
     // --- <<< NEW: Item Usage Animation >>> ---
-    case "item_start":
-        show_debug_message(object_get_name(object_index) + " " + string(id) + ": State -> item_start ...");
-        origin_x = x; origin_y = y; 
-        sprite_before_attack = idle_sprite; 
-        
-        // Set Item Sprite & Speed
-        if (sprite_exists(item_sprite_asset)) { sprite_index = item_sprite_asset; } 
-        else { sprite_index = idle_sprite; } // Fallback
-        image_index = 0;
-        image_speed = attack_anim_speed; // Reuse speed variable
-        show_debug_message("    -> Set player sprite to ITEM: " + sprite_get_name(sprite_index) + " | Speed: " + string(image_speed));
+case "item_start":
+    show_debug_message(object_get_name(object_index) + " " + string(id) + ": State -> item_start ...");
+    origin_x = x; origin_y = y; 
+    sprite_before_attack = idle_sprite; 
 
-        // DO NOT TELEPORT, DO NOT CHANGE SCALE
+    // Set player to your item‐use pose
+    if (sprite_exists(item_sprite_asset)) {
+        sprite_index = item_sprite_asset;
+    } else {
+        sprite_index = idle_sprite;
+    }
+    image_index = 0;
+    image_speed = attack_anim_speed;
+    show_debug_message(
+      "    -> Set player sprite to ITEM pose: "
+    + sprite_get_name(sprite_index)
+    + " | Speed: "
+    + string(image_speed)
+    );
 
-        // Get FX info from item struct
-        var item_struct = stored_action_for_anim; 
-        var target_fx_sprite = spr_pow; var target_fx_sound = snd_punch;
-        if (is_struct(item_struct)) { target_fx_sprite = item_struct.fx_sprite ?? spr_pow; target_fx_sound = item_struct.fx_sound ?? snd_punch;}
-        if (audio_exists(target_fx_sound)) { audio_play_sound(target_fx_sound, 10, false); }
+    // Get FX info from the item struct
+    var item_struct    = stored_action_for_anim;
+    var target_fx_sp   = spr_pow;
+    var target_fx_snd  = snd_punch;
+    if (is_struct(item_struct)) {
+        target_fx_sp  = item_struct.fx_sprite ?? spr_pow;
+        target_fx_snd = item_struct.fx_sound  ?? snd_punch;
+    }
+    if (audio_exists(target_fx_snd)) audio_play_sound(target_fx_snd, 10, false);
 
-        // Create TARGET Visual Effect 
-        // Note: Effect (heal/damage) was ALREADY applied by manager
-        if (instance_exists(target_for_attack) && object_exists(obj_attack_visual)) {
-            var _fx_x = target_for_attack.x; var _fx_y = target_for_attack.y - 32;
-            var _layer_id = layer_get_id("Instances_FX"); 
-            if (_layer_id != -1) {
-                 var fx = instance_create_layer(_fx_x, _fx_y, _layer_id, obj_attack_visual);
-                 if (instance_exists(fx)) {
-                      fx.sprite_index = target_fx_sprite; fx.image_speed = attack_anim_speed;
-                      fx.depth = target_for_attack.depth - 1; fx.owner_instance = id; 
-                      attack_animation_finished = false; // Wait for this target FX
-                      show_debug_message("    -> Created TARGET FX for item: " + sprite_get_name(fx.sprite_index));
-                 } else { attack_animation_finished = true; }
-            } else { attack_animation_finished = true; }
-        } else { attack_animation_finished = true; } // Finish immediately if no target
+    // Spawn the visual‐effect over the target
+    if (instance_exists(target_for_attack) && object_exists(obj_attack_visual)) {
+        var _fx_x = target_for_attack.x;
+        var _fx_y = target_for_attack.y - 32;
+        var _lid = layer_get_id("Instances_FX");
+        if (_lid != -1) {
+            var fx = instance_create_layer(_fx_x, _fx_y, _lid, obj_attack_visual);
+            if (instance_exists(fx)) {
+                fx.sprite_index    = target_fx_sp;
+                fx.image_speed     = attack_anim_speed;
+                fx.depth           = target_for_attack.depth - 1;
+                fx.owner_instance  = id;
 
-        combat_state = "waiting_for_effect"; 
-        break;
+                // <<< NEW: Tell the FX which item icon to draw over the user >>>
+                if (is_struct(item_struct) && variable_struct_exists(item_struct, "sprite_index")) {
+                    fx.item_icon = item_struct.sprite_index;
+                } else {
+                    fx.item_icon = -1;
+                }
+
+                attack_animation_finished = false;
+                show_debug_message(
+                  "    -> Created TARGET FX for item: "
+                + sprite_get_name(fx.sprite_index)
+                );
+            } else {
+                attack_animation_finished = true;
+            }
+        } else {
+            attack_animation_finished = true;
+        }
+    } else {
+        attack_animation_finished = true;
+    }
+
+    combat_state = "waiting_for_effect";
+    break;
         
     // --- Shared Waiting State ---
     case "waiting_for_effect": 
