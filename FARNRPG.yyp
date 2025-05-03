@@ -48,6 +48,7 @@
   ],
   "ForcedPrefabProjectReferences":[],
   "IncludedFiles":[
+    {"$GMIncludedFile":"","%Name":"Emulogic-zrEw.ttf","CopyToMask":-1,"filePath":"datafiles","name":"Emulogic-zrEw.ttf","resourceType":"GMIncludedFile","resourceVersion":"2.0",},
     {"$GMIncludedFile":"","%Name":"Orange kid.ttf","CopyToMask":-1,"filePath":"datafiles","name":"Orange kid.ttf","resourceType":"GMIncludedFile","resourceVersion":"2.0",},
   ],
   "isEcma":false,
@@ -520,6 +521,7 @@
     {"id":{"name":"spr_fx_overdrive","path":"sprites/spr_fx_overdrive/spr_fx_overdrive.yy",},},
     {"id":{"name":"spr_fx_status","path":"sprites/spr_fx_status/spr_fx_status.yy",},},
     {"id":{"name":"spr_fx_zap","path":"sprites/spr_fx_zap/spr_fx_zap.yy",},},
+    {"id":{"name":"spr_fx_zap1","path":"sprites/spr_fx_zap1/spr_fx_zap1.yy",},},
     {"id":{"name":"spr_gabby_attack","path":"sprites/spr_gabby_attack/spr_gabby_attack.yy",},},
     {"id":{"name":"spr_gabby_battle","path":"sprites/spr_gabby_battle/spr_gabby_battle.yy",},},
     {"id":{"name":"spr_gabby_cast","path":"sprites/spr_gabby_cast/spr_gabby_cast.yy",},},
