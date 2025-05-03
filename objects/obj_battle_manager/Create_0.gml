@@ -152,7 +152,7 @@ show_debug_message("--- Total Combatants for Speed Queue: " + string(ds_list_siz
 
 // --- Create Battle Menu ---
 show_debug_message("--- Creating battle menu ---");
-var gui_layer_name = "Instances_GUI"; 
+var gui_layer_name = "Instances"; 
 var gui_layer_id = layer_get_id(gui_layer_name);
 if (gui_layer_id == -1) { 
      show_debug_message("Warning: Layer '" + gui_layer_name + "' not found. Creating menu on '" + instance_layer_name + "'.");

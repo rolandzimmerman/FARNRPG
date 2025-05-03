@@ -27,7 +27,7 @@ switch (global.battle_state) {
     case "calculate_turn": 
     {
         show_debug_message("Manager Step: calculate_turn");
-        // --- Cleanup dead/destroyed instances --- 
+        // --- Cleanup dead/destroyed Instances_FX --- 
         for (var i = ds_list_size(combatants_all) - 1; i >= 0; i--) { 
              var _inst_clean = combatants_all[| i];
              if (!instance_exists(_inst_clean)) { 

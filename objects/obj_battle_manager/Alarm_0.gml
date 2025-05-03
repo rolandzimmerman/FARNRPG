@@ -82,7 +82,7 @@ switch (global.battle_state) {
             }
         }
 
-        // Cleanup instances
+        // Cleanup Instances_FX
         with (obj_battle_player) instance_destroy();
         with (obj_battle_enemy) instance_destroy();
         with (obj_battle_menu) instance_destroy();

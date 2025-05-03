@@ -275,7 +275,7 @@ switch (combat_state) {
         if (target_exists) { 
              if (object_exists(obj_attack_visual)) {
                  var _fx_x = target_for_attack.x; var _fx_y = target_for_attack.y - 32; 
-                 var _layer_id = layer_get_id("Instances"); 
+                 var _layer_id = layer_get_id("Instances_FX"); 
                  if (_layer_id != -1) { 
                      var fx = instance_create_layer(_fx_x, _fx_y, _layer_id, obj_attack_visual); 
                      if (instance_exists(fx)) {
@@ -306,7 +306,7 @@ switch (combat_state) {
         
         // Create Caster Visual Effect 
         if (object_exists(obj_caster_visual) && sprite_exists(caster_fx_sprite)) {
-             var _caster_layer_id = layer_get_id("Instances"); 
+             var _caster_layer_id = layer_get_id("Instances_FX"); 
              if (_caster_layer_id != -1) {
                  var caster_fx = instance_create_layer(x, y - 48, _caster_layer_id, obj_caster_visual); 
                  if (instance_exists(caster_fx)) { caster_fx.sprite_index = caster_fx_sprite; caster_fx.image_speed = attack_anim_speed; caster_fx.depth = depth - 1; }
@@ -317,12 +317,12 @@ switch (combat_state) {
         // Note: Effect (damage/heal) was ALREADY applied by manager
         if (instance_exists(target_for_attack) && object_exists(obj_attack_visual)) {
             var _fx_x = target_for_attack.x; var _fx_y = target_for_attack.y - 32;
-            var _layer_id = layer_get_id("Instances"); 
+            var _layer_id = layer_get_id("Instances_FX"); 
             if (_layer_id != -1) {
                  var fx = instance_create_layer(_fx_x, _fx_y, _layer_id, obj_attack_visual);
                  if (instance_exists(fx)) {
                       fx.sprite_index = target_fx_sprite; fx.image_speed = attack_anim_speed;
-                      fx.depth = target_for_attack.depth - 1; fx.owner_instance = id; 
+                      fx.depth = target_for_attack.depth - 100; fx.owner_instance = id; 
                       attack_animation_finished = false; // Wait for this target FX
                  } else { attack_animation_finished = true; }
             } else { attack_animation_finished = true; }
@@ -409,7 +409,7 @@ switch (combat_state) {
         // Note: Effect (heal/damage) was ALREADY applied by manager
         if (instance_exists(target_for_attack) && object_exists(obj_attack_visual)) {
             var _fx_x = target_for_attack.x; var _fx_y = target_for_attack.y - 32;
-            var _layer_id = layer_get_id("Instances"); 
+            var _layer_id = layer_get_id("Instances_FX"); 
             if (_layer_id != -1) {
                  var fx = instance_create_layer(_fx_x, _fx_y, _layer_id, obj_attack_visual);
                  if (instance_exists(fx)) {
