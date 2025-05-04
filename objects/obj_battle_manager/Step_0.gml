@@ -411,7 +411,7 @@ break;
         global.battle_state = "check_win_loss"; 
     }
     break; // End "action_complete"
-
+            
     case "check_win_loss": 
     {
          show_debug_message("Manager Step: In check_win_loss State");

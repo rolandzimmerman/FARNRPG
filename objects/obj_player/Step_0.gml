@@ -100,6 +100,7 @@ if (global.encounter_timer >= threshold) {
 
     if (random(100) < chance) {
         if (variable_global_exists("encounter_table") && ds_exists(global.encounter_table, ds_type_map)) {
+            audio_play_sound(snd_sfx_encounter, 1, 0);
             var list = ds_map_find_value(global.encounter_table, room);
             if (ds_exists(list, ds_type_list) && !ds_list_empty(list)) {
                 var index = irandom(ds_list_size(list) - 1);

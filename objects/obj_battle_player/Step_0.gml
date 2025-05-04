@@ -140,64 +140,92 @@ if (variable_global_exists("active_party_member_index")
                 }
                 break; // End "player_input" case
             // ==================================================================
-            case "skill_select":
-                 var skills = d.skills ?? []; 
-                 var cnt = array_length(skills);
-                 if (cnt > 0) {
-                     // Navigation
-                     if (U) d.skill_index = (d.skill_index - 1 + cnt) mod cnt;
-                     if (D) d.skill_index = (d.skill_index + 1) mod cnt;
-                     
-                     // --- <<< MODIFIED: Skill Confirmation (A Button) >>> ---
-                     if (A) { 
-                         var s = skills[d.skill_index]; 
-                         var can_cast = false; 
-                         // Usability Check (Your existing logic)
-                         if (variable_struct_exists(s, "overdrive") && s.overdrive == true) { can_cast = (d.overdrive >= d.overdrive_max); if (!can_cast) { show_debug_message("Not enough OD."); } } 
-                         else { var cost = s.cost ?? 0; can_cast = (d.mp >= cost); if (!can_cast) { show_debug_message("Not enough MP."); } }
+case "skill_select":
+{
+    // Shortcut to my data
+    var d = data;
 
-                         if (can_cast && instance_exists(obj_battle_manager)) {
-                             obj_battle_manager.stored_action_data = s; // Store skill struct
-                             
-                             // --- Determine Next State based on Target Type ---
-                             // Assumes 'target_type' exists in skill struct 's' (added in scr_BuildCharacterDB)
-                             var targetType = s.target_type ?? "enemy"; // Default to enemy if missing
-                             show_debug_message(" -> Skill '" + (s.name ?? "???") + "' selected. Target Type: " + targetType);
+    // Build the list of skills we actually want to show:
+    // - All non‐overdrive skills
+    // - Overdrive skills only if gauge is full
+    var skills_all = d.skills ?? [];
+    var display_skills = [];
+    for (var i = 0; i < array_length(skills_all); i++) {
+        var s = skills_all[i];
+        if (variable_struct_exists(s, "overdrive") && s.overdrive) {
+            // Only show overdrive skills when gauge is full
+            if (d.overdrive >= d.overdrive_max) {
+                array_push(display_skills, s);
+            }
+        } else {
+            array_push(display_skills, s);
+        }
+    }
 
-                             if (targetType == "enemy") {
-                                 global.battle_target = 0; // Reset enemy target cursor index
-                                 global.battle_state  = "TargetSelect"; // Go to enemy targeting state
-                                 show_debug_message("    -> Transitioning to TargetSelect (Enemy)");
-                             } 
-                             else if (targetType == "ally") {
-                                 // Use active player index as starting point for ally target cursor
-                                 global.battle_ally_target = global.active_party_member_index ?? 0; // Initialize ally cursor
-                                 global.battle_state = "TargetSelectAlly"; // <<< Tell manager to use NEW state
-                                 show_debug_message("    -> Transitioning to TargetSelectAlly");
-                             } 
-                             else if (targetType == "self") {
-                                 obj_battle_manager.selected_target_id = id; // Target is self
-                                 global.battle_state  = "ExecutingAction"; 
-                                 show_debug_message("    -> Self-target skill. Transitioning to ExecutingAction");
-                             } 
-                             // Add handling for "all_enemies", "all_allies", "any" here later if needed
-                             else { // Default for unknown types
-                                  show_debug_message("    -> Unknown/Unsupported target_type. Treating as self.");
-                                  obj_battle_manager.selected_target_id = id; 
-                                  global.battle_state  = "ExecutingAction"; 
-                             }
-                             // --- End Target Type Check ---
+    var cnt = array_length(display_skills);
+    if (cnt > 0) {
+        // Ensure we have a valid skill_index
+        if (!variable_struct_exists(d, "skill_index")) d.skill_index = 0;
+        d.skill_index = clamp(d.skill_index, 0, cnt - 1);
 
-                         } else if (!can_cast) { show_debug_message(" -> Failed usability check."); } 
-                         
-                     } // End Confirm (A)
-                     // --- <<< END MODIFICATION >>> ---
-                 } // End if cnt > 0
-                 
-                 // Cancel/Back
-                 if (B) { global.battle_state = "player_input"; show_debug_message(" -> Cancelled Skill Select -> player_input"); }
-                 
-                 break; // End "skill_select" case
+        // Navigation
+        if (U) d.skill_index = (d.skill_index - 1 + cnt) mod cnt;
+        if (D) d.skill_index = (d.skill_index + 1) mod cnt;
+
+        // Confirm (A)
+        if (A) {
+            var s = display_skills[d.skill_index];
+            var can_cast = false;
+            // Usability Check
+            if (variable_struct_exists(s, "overdrive") && s.overdrive) {
+                can_cast = (d.overdrive >= d.overdrive_max);
+                if (!can_cast) show_debug_message("Not enough Overdrive.");
+            } else {
+                var cost = s.cost ?? 0;
+                can_cast = (d.mp >= cost);
+                if (!can_cast) show_debug_message("Not enough MP.");
+            }
+
+            if (can_cast && instance_exists(obj_battle_manager)) {
+                obj_battle_manager.stored_action_data = s; // Store skill struct
+
+                // Determine next state based on target_type
+                var targetType = s.target_type ?? "enemy";
+                show_debug_message(" -> Skill '" + (s.name ?? "???") + "' selected. Target Type: " + targetType);
+
+                if (targetType == "enemy") {
+                    global.battle_target = 0;
+                    global.battle_state  = "TargetSelect";
+                    show_debug_message("    -> Transitioning to TargetSelect (Enemy)");
+                }
+                else if (targetType == "ally") {
+                    global.battle_ally_target   = global.active_party_member_index ?? 0;
+                    global.battle_state         = "TargetSelectAlly";
+                    show_debug_message("    -> Transitioning to TargetSelectAlly");
+                }
+                else if (targetType == "self") {
+                    obj_battle_manager.selected_target_id = id;
+                    global.battle_state                   = "ExecutingAction";
+                    show_debug_message("    -> Self‐target skill. ExecutingAction");
+                }
+                else {
+                    // Fall back to self
+                    obj_battle_manager.selected_target_id = id;
+                    global.battle_state                   = "ExecutingAction";
+                    show_debug_message("    -> Unknown target_type. Defaulting to self.");
+                }
+            }
+            // else already logged why we can't cast
+        }
+    }
+
+    // Cancel / Back (B)
+    if (B) {
+        global.battle_state = "player_input";
+        show_debug_message(" -> Cancelled Skill Select -> player_input");
+    }
+}
+break; // End "skill_select"
             // ==================================================================
             case "item_select":
                  var items = global.battle_usable_items ?? []; var c = array_length(items);

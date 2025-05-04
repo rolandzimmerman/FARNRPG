@@ -94,18 +94,27 @@ function scr_BuildSpellDB() {
         },
         // === Overdrive Skills ===
         overdrive_strike: {
-            name:        "Overdrive Strike", cost: 0, overdrive: true,
-            effect:      "damage_enemy", target_type: "enemy", // <<< MODIFIED
-            damage:      100, element: "physical", power_stat: "atk",
-            fx_sprite:   spr_fx_magic, // <<< ADDED (Example sprite)
-            fx_sound:    snd_sfx_magic     // <<< ADDED (Example sound)
+            name:        "OVERDRIVE STRIKE",  // ← now uppercase
+            cost:        0,
+            overdrive:   true,
+            effect:      "damage_enemy",
+            target_type: "enemy",
+            damage:      100,
+            element:     "physical",
+            power_stat:  "atk",
+            fx_sprite:   spr_fx_magic,
+            fx_sound:    snd_sfx_magic
         },
         overdrive_heal: {
-            name:        "Overdrive Heal", cost: 0, overdrive: true,
-            effect:      "heal_hp", target_type: "ally", // <<< MODIFIED (Target ally)
-            heal_amount: 9999, power_stat: "matk",
-            fx_sprite:   spr_fx_magic, // <<< ADDED (Example sprite)
-            fx_sound:    snd_sfx_magic     // <<< ADDED (Example sound)
+            name:        "OVERDRIVE HEAL",  // ← now uppercase
+            cost:        0,
+            overdrive:   true,
+            effect:      "heal_hp",
+            target_type: "ally",
+            heal_amount: 9999,
+            power_stat:  "matk",
+            fx_sprite:   spr_fx_magic,
+            fx_sound:    snd_sfx_magic
         }
     };
 

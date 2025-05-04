@@ -9,7 +9,6 @@ if (!instance_exists(obj_battle_manager)) exit;
 if (!variable_global_exists("battle_state")) exit; // Exit if state var doesn't exist
 var _current_battle_state = global.battle_state; // Read the global string state
 
-
 // --- Active Player Data Validation ---
 // Use global.active_party_member_index which manager updates when a player turn starts
 var active_player_data_valid = false;
@@ -47,7 +46,6 @@ if (variable_global_exists("active_party_member_index")
     }
 }
 // If not in a state where a player index is set, active_idx remains -1, active_p_inst is noone.
-
 
 // === Constants === (Keep your existing constants)
 var party_hud_positions_x = [64, 320, 576, 832];
@@ -114,24 +112,105 @@ if (variable_global_exists("battle_party") && ds_exists(global.battle_party, ds_
 
         if (_spr_hud_bg) draw_sprite_ext(spr_pc_hud_bg, 0, x0, y0, 1, 1, 0, tint, alpha);
         draw_set_alpha(alpha); draw_set_valign(fa_top);
-        draw_text_color(x0 + 10, y0 + 3, d.name ?? "???", tint, tint, tint, tint, alpha); 
+        draw_text_color(x0 + 10, y0, d.name ?? "???", tint, tint, tint, tint, alpha); 
 
         // HP bar / Text 
-        if (_spr_hp && variable_struct_exists(d, "hp") && variable_struct_exists(d, "maxhp")) { var r = clamp(d.hp / max(1,d.maxhp), 0, 1); var w = floor(_spr_hp_w * r); if (w > 0) draw_sprite_part_ext(spr_pc_hud_hp,0,0,0,w,_spr_hp_h, x0+32,y0+20,1,1,c_white,alpha); }
-        draw_set_valign(fa_middle); draw_text_color(x0+35, y0+20+_spr_hp_h/2, string(floor(d.hp))+"/"+string(floor(d.maxhp)),tint,tint,tint,tint, alpha); draw_set_valign(fa_top);
+        if (_spr_hp && variable_struct_exists(d, "hp") && variable_struct_exists(d, "maxhp")) {
+            var r  = clamp(d.hp / max(1,d.maxhp), 0, 1);
+            var w  = floor(_spr_hp_w * r);
+            if (w > 0) {
+                draw_sprite_part_ext(
+                    spr_pc_hud_hp, 0,
+                    0, 0,          // from its top‐left
+                    w, _spr_hp_h,  // width proportion, full height
+                    x0 + 32,       // HP X
+                    y0,       // HP Y
+                    1, 1,
+                    c_white, alpha
+                );
+            }
+        }
+        draw_set_valign(fa_middle);
+        draw_text_color(
+            x0 + 180, 
+            y0 -16 + _spr_hp_h/2,
+            string(floor(d.hp)) + "/" + string(floor(d.maxhp)),
+            tint, tint, tint, tint, alpha
+        );
+        draw_set_valign(fa_top);
 
         // MP bar / Text
-        if (_spr_mp && variable_struct_exists(d, "mp") && variable_struct_exists(d, "maxmp")) { var r2 = clamp(d.mp / max(1, d.maxmp), 0,1); var w2 = floor(_spr_mp_w * r2); if (w2 > 0) draw_sprite_part_ext(spr_pc_hud_mp,0,0,0,w2,_spr_mp_h, x0+32,y0+38,1,1,c_white,alpha); }
-        draw_set_valign(fa_middle); draw_text_color(x0+35, y0+38+_spr_mp_h/2, string(floor(d.mp))+"/"+string(floor(d.maxmp)), tint, tint, tint, tint, alpha); draw_set_valign(fa_top);
+        // --- Position matched to HP bar (same X,Y) ---
+        if (_spr_mp && variable_struct_exists(d, "mp") && variable_struct_exists(d, "maxmp")) {
+            var r2  = clamp(d.mp / max(1,d.maxmp), 0, 1);
+            var w2  = floor(_spr_mp_w * r2);
+            if (w2 > 0) {
+                draw_sprite_part_ext(
+                    spr_pc_hud_mp, 0,
+                    0, 0,            // from its top‐left
+                    w2, _spr_mp_h,   // width proportion, full height
+                    x0 + 32,         // **MP X now same as HP X**
+                    y0,         // **MP Y now same as HP Y**
+                    1, 1,
+                    c_white, alpha
+                );
+            }
+        }
+        draw_set_valign(fa_middle);
+        draw_text_color(
+            x0 + 180,
+            y0 + _spr_mp_h/2, // **MP text Y matches HP text Y**
+            string(floor(d.mp)) + "/" + string(floor(d.maxmp)),
+            tint, tint, tint, tint, alpha
+        );
+        draw_set_valign(fa_top);
 
-        // Overdrive bar
-        if (_spr_od && variable_struct_exists(d, "overdrive") && variable_struct_exists(d, "overdrive_max")) { var ro = clamp(d.overdrive / max(1, d.overdrive_max), 0,1); var wo = floor(_spr_od_w * ro); if (wo > 0) { var xo = x0+32; var yo = y0+38+_spr_mp_h+4; draw_sprite_part_ext(spr_pc_hud_od,0,0,0,wo,_spr_od_h, xo,yo,1,1,c_white,alpha); } }
-        
+        // Overdrive bar: static first frame while filling, animate when full
+        // --- Position matched to HP bar (same X,Y) ---
+        if (_spr_od
+         && variable_struct_exists(d, "overdrive")
+         && variable_struct_exists(d, "overdrive_max")) {
+            
+            // Fill ratio
+            var ro    = clamp(d.overdrive / max(1, d.overdrive_max), 0, 1);
+            var xo    = x0 + 32;  // **OD X same as HP X**
+            var yo    = y0;  // **OD Y same as HP Y**
+            
+            if (ro < 1) {
+                // Partial fill of the **first** frame
+                var wo = floor(_spr_od_w * ro);
+                if (wo > 0) {
+                    draw_sprite_part_ext(
+                        spr_pc_hud_od,  // sprite
+                        0,               // subimage 0 = first frame
+                        0, 0,           // from its top‐left
+                        wo, _spr_od_h,  // width = wo, full height
+                        xo, yo,         // draw at same coords as HP bar
+                        1, 1,           // no scaling
+                        c_white, alpha  // normal tint/alpha
+                    );
+                }
+            } else {
+                // Full gauge → play the full animation
+                var num   = sprite_get_number(spr_pc_hud_od);
+                // advance one frame per 100 ms
+                var frame = (current_time div 100) mod num;
+                draw_sprite_ext(
+                    spr_pc_hud_od,
+                    frame,
+                    xo, yo,    // **OD anim at same coords as HP bar**
+                    1, 1,
+                    0,
+                    c_white, alpha
+                );
+            }
+        }
+
         draw_set_alpha(1); // Reset alpha after each HUD element
     }
 }
 
-// === Main Command / Skill / Item Menus ===
+// === Main Command / Skill / Item Menues ===
 draw_set_color(c_white);
 
 // Only draw menus if it's a valid player's turn and data is good
