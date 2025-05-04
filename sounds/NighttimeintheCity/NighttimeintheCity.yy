@@ -1,0 +1,25 @@
+{
+  "$GMSound":"",
+  "%Name":"NighttimeintheCity",
+  "audioGroupId":{
+    "name":"audio_group_music",
+    "path":"audiogroups/audio_group_music",
+  },
+  "bitDepth":1,
+  "bitRate":320,
+  "compression":0,
+  "conversionMode":0,
+  "duration":146.10286,
+  "name":"NighttimeintheCity",
+  "parent":{
+    "name":"Music",
+    "path":"folders/Sounds/Music.yy",
+  },
+  "preload":false,
+  "resourceType":"GMSound",
+  "resourceVersion":"2.0",
+  "sampleRate":44100,
+  "soundFile":"NighttimeintheCity.mp3",
+  "type":1,
+  "volume":1.0,
+}
