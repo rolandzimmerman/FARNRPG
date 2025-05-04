@@ -78,11 +78,12 @@ break;
                 var stats = ds_map_find_value(global.party_current_stats, key);
                 if (!is_struct(stats)) continue;
 
-                stats.hp = max(0, inst.data.hp);
-                stats.mp = max(0, inst.data.mp);
-                stats.level = inst.data.level;
-                stats.xp = inst.data.xp;
-                stats.xp_require = inst.data.xp_require;
+    stats.hp          = max(0, inst.data.hp);
+    stats.mp          = max(0, inst.data.mp);
+    stats.overdrive   = clamp(inst.data.overdrive, 0, inst.data.overdrive_max);  // ← NEW
+    stats.level       = inst.data.level;
+    stats.xp          = inst.data.xp;
+    stats.xp_require  = inst.data.xp_require;
 
                 ds_map_replace(global.party_current_stats, key, stats);
             }
