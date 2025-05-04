@@ -11,9 +11,13 @@ if (variable_instance_exists(id, "data")
     death_started = false;       // reset the flag
     combat_state    = "dying";   // enter your dying logic
     show_debug_message("Player " + string(id) + " entering dying state");
-    // skip the rest of input/animation logic this frame
-    return;
+    show_debug_message(
+      (object_index == obj_battle_player ? "Player " : "Enemy ")
+      + string(id)
+      + " entering dying state"
+    );
 }
+
 
 // --- One-Time Sprite Assignment --- 
 if (!variable_instance_exists(id, "sprite_assigned") || !sprite_assigned) { 
