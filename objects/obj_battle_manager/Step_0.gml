@@ -406,9 +406,7 @@ break;
         stored_action_data = undefined; selected_target_id = noone; 
         global.active_party_member_index = -1; 
 
-        if (script_exists(scr_UpdateStatusEffects)) { scr_UpdateStatusEffects(); }
-        if (script_exists(scr_CalculateTurnOrderDisplay)) { turnOrderDisplay = scr_CalculateTurnOrderDisplay(combatants_all, BASE_TICK_VALUE, TURN_ORDER_DISPLAY_COUNT); }
-        
+
         show_debug_message(" -> Transitioning from action_complete to check_win_loss"); 
         global.battle_state = "check_win_loss"; 
     }

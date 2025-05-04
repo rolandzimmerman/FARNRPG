@@ -55,64 +55,56 @@ function scr_SpeedQueue(_combatant_list, _base_tick_value) {
 }
 
 /// @function scr_ResetTurnCounter(instance_id, base_tick_value)
-/// @description Resets the turn counter for a given combatant after their action,
-///              taking into account haste/slow/webbed.
+/// @description Resets the turn counter and ticks down any status on that instance.
 function scr_ResetTurnCounter(_instance_id, _base_tick_value) {
-    // 1) Validate
-    if (!instance_exists(_instance_id)) {
-        show_debug_message("scr_ResetTurnCounter: Error – instance " 
-                         + string(_instance_id) + " does not exist.");
-        return false;
-    }
+    // ————— Validation —————
+    if (!instance_exists(_instance_id)) return false;
     if (!variable_instance_exists(_instance_id, "data")
      || !is_struct(_instance_id.data)
      || !variable_struct_exists(_instance_id.data, "spd")) {
-        show_debug_message("scr_ResetTurnCounter: Error – instance " 
-                         + string(_instance_id) + " missing data.spd.");
+        show_debug_message("scr_ResetTurnCounter: Missing data.spd on " + string(_instance_id));
         return false;
     }
     if (!variable_instance_exists(_instance_id, "turnCounter")) {
-        show_debug_message("scr_ResetTurnCounter: Error – instance " 
-                         + string(_instance_id) + " missing turnCounter.");
+        show_debug_message("scr_ResetTurnCounter: Missing turnCounter on " + string(_instance_id));
         return false;
     }
 
-    // 2) Base speed
-    var spd = max(1, _instance_id.data.spd);
-
-    // 3) Status multiplier (haste / slow / webbed)
-    var mult = 1.0;
-    var st   = script_exists(scr_GetStatus)
-             ? scr_GetStatus(_instance_id)
-             : undefined;
-
+    // ————— Base Reset (with Haste/Slow) —————
+    var _spd = max(1, _instance_id.data.spd);
+    var _mult = 1.0;
+    var st = script_exists(scr_GetStatus) ? scr_GetStatus(_instance_id) : undefined;
     if (is_struct(st)) {
         switch (st.effect) {
-            case "haste":
-                mult = 0.66; 
-                show_debug_message(" -> Haste: faster recovery");
-                break;
-            case "slow":
-                mult = 1.5;
-                show_debug_message(" -> Slow: slower recovery");
-                break;
-            case "webbed":
-                mult = 2.0;
-                show_debug_message(" -> Webbed: speed halved");
-                break;
+            case "haste": _mult = 0.66; break;
+            case "slow":  _mult = 1.50; break;
+        }
+    }
+    _instance_id.turnCounter = (_base_tick_value / _spd) * _mult;
+    show_debug_message("scr_ResetTurnCounter: " + string(_instance_id)
+                     + " → " + string(_instance_id.turnCounter)
+                     + " (" + string(_spd) + ", x" + string(_mult) + ")");
+
+    // ————— Tick Down This Instance’s Status —————
+    if (variable_global_exists("battle_status_effects")
+     && ds_exists(global.battle_status_effects, ds_type_map)
+     && ds_map_exists(global.battle_status_effects, _instance_id)) {
+        var status = ds_map_find_value(global.battle_status_effects, _instance_id);
+        status.duration -= 1;
+        if (status.duration <= 0) {
+            ds_map_delete(global.battle_status_effects, _instance_id);
+            show_debug_message("scr_ResetTurnCounter: Status expired on " + string(_instance_id));
+        } else {
+            ds_map_replace(global.battle_status_effects, _instance_id, status);
+            show_debug_message("scr_ResetTurnCounter: Status '" + status.effect
+                             + "' now " + string(status.duration) + " turns on "
+                             + string(_instance_id));
         }
     }
 
-    // 4) Calculate and assign
-    _instance_id.turnCounter = (_base_tick_value / spd) * mult;
-    show_debug_message("scr_ResetTurnCounter: instance " 
-                     + string(_instance_id)
-                     + " → turnCounter=" 
-                     + string(_instance_id.turnCounter)
-                     + " (spd=" + string(spd)
-                     + ", mult=" + string(mult) + ")");
     return true;
 }
+
 
 
 
