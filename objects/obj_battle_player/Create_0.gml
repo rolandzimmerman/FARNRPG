@@ -42,5 +42,7 @@ attack_fx_sound = snd_punch;
 // --- ITEM DRAW OFFSETS (tweak once here) ---
 item_offset_x = 16;
 item_offset_y = -8;
+death_anim_speed = 0.2; // or whatever feels right
+death_started    = false;
 
 show_debug_message("--- obj_battle_player Create END ---");

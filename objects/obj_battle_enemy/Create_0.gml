@@ -16,6 +16,9 @@ target_for_attack = noone;
 attack_fx_sprite = spr_pow;  // Default, manager might override based on data
 attack_fx_sound = snd_punch; // Default, manager might override based on data
 attack_animation_finished = false; 
+death_anim_speed = 1; // or whatever you like
+death_started    = false;
+
 
 // **REMOVED from here:** Code accessing 'data' like:
 // sprite_index = data.sprite_index ?? -1; 

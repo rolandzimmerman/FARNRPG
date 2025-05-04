@@ -1,6 +1,17 @@
 /// obj_battle_enemy :: Step Event (Example Parent)
 // Handles combat animation state machine.
-
+// — AUTO‐TRIGGER ENEMY DEATH —
+if (variable_instance_exists(id, "data")
+ && is_struct(data)
+ && data.hp <= 0
+ && combat_state != "dying"
+ && combat_state != "corpse"
+ && combat_state != "dead") {
+    death_started = false;
+    combat_state    = "dying";
+    show_debug_message("Enemy " + string(id) + " entering dying state");
+    return;
+}
 // Update origin AND original scale while idle
 if (combat_state == "idle") {
     origin_x = x;
@@ -119,12 +130,33 @@ switch (combat_state) {
         combat_state = "idle"; 
         break;
         
-     case "dying": 
-        image_alpha -= 0.05; 
-        if (image_alpha <= 0) { instance_destroy(); }
-        break;
-        
-      case "dead":
-           break; 
+case "dying":
+    if (!death_started) {
+        var anim = spr_death;
+        if (variable_struct_exists(data, "death_anim_sprite")
+         && sprite_exists(data.death_anim_sprite)) {
+            anim = data.death_anim_sprite;
+        }
+        sprite_index  = anim;
+        image_index   = 0;
+        image_speed   = death_anim_speed;
+        death_started = true;
+    }
+    else if (image_index >= sprite_get_number(sprite_index) - 1) {
+        var corpse = spr_dead;
+        if (variable_struct_exists(data, "corpse_sprite")
+         && sprite_exists(data.corpse_sprite)) {
+            corpse = data.corpse_sprite;
+        }
+        sprite_index = corpse;
+        image_index  = 0;
+        image_speed  = 0;
+        combat_state = "corpse";
+    }
+    break;
+
+case "corpse":
+    // do nothing
+    break;
            
 } // End Switch

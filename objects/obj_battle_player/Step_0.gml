@@ -1,5 +1,19 @@
 /// obj_battle_player :: Step Event
 /// Handles player input processing AND combat animation state machine.
+/// 
+// — AUTO‐TRIGGER PLAYER DEATH —
+if (variable_instance_exists(id, "data")
+ && is_struct(data)
+ && data.hp <= 0
+ && combat_state != "dying"
+ && combat_state != "corpse"
+ && combat_state != "dead") {
+    death_started = false;       // reset the flag
+    combat_state    = "dying";   // enter your dying logic
+    show_debug_message("Player " + string(id) + " entering dying state");
+    // skip the rest of input/animation logic this frame
+    return;
+}
 
 // --- One-Time Sprite Assignment --- 
 if (!variable_instance_exists(id, "sprite_assigned") || !sprite_assigned) { 
@@ -569,18 +583,33 @@ case "item_start":
          show_debug_message(" -> Finished item use. State -> idle.");
          break;
         
-    case "dying": 
-         image_alpha -= 0.05; 
-         if (image_alpha <= 0) { 
-              show_debug_message(object_get_name(object_index) + " " + string(id) + ": Player KO animation complete.");
-              visible = false; 
-              combat_state = "dead"; 
-         }
-         break;
-        
-     case "dead":
-          visible = false; 
-          image_speed = 0; 
-          break;
+case "dying":
+    if (!death_started) {
+        var anim = spr_death;
+        if (variable_struct_exists(data, "death_anim_sprite")
+         && sprite_exists(data.death_anim_sprite)) {
+            anim = data.death_anim_sprite;
+        }
+        sprite_index  = anim;
+        image_index   = 0;
+        image_speed   = death_anim_speed;
+        death_started = true;
+    }
+    else if (image_index >= sprite_get_number(sprite_index) - 1) {
+        var corpse = spr_dead;
+        if (variable_struct_exists(data, "corpse_sprite")
+         && sprite_exists(data.corpse_sprite)) {
+            corpse = data.corpse_sprite;
+        }
+        sprite_index = corpse;
+        image_index  = 0;
+        image_speed  = 0;
+        combat_state = "corpse";
+    }
+    break;
+
+case "corpse":
+    // static corpse
+    break;
         
 } // End Switch
