@@ -3,45 +3,51 @@ show_debug_message("⏰ Alarm[0] Triggered — Battle State: " + string(global.b
 
 switch (global.battle_state) {
 
-    case "victory":
-    {
-        show_debug_message("🏆 Victory! Processing XP and preparing to return.");
+case "victory":
+{
+    show_debug_message("🏆 Victory! Summing XP from initial_enemy_xp...");
 
-        var leveled_up = [];
+    // 1) Sum total XP from the recorded list
+    total_xp_from_battle = 0;
+    if (variable_instance_exists(id, "initial_enemy_xp")
+     && ds_exists(initial_enemy_xp, ds_type_list)) {
+        for (var i = 0; i < ds_list_size(initial_enemy_xp); i++) {
+            total_xp_from_battle += ds_list_find_value(initial_enemy_xp, i);
+        }
+    }
+    show_debug_message(" -> Total XP to award: " + string(total_xp_from_battle));
 
-        if (ds_exists(global.battle_party, ds_type_list)) {
-            for (var i = 0; i < ds_list_size(global.battle_party); i++) {
-                var inst = global.battle_party[| i];
-                if (!instance_exists(inst)) continue;
-                if (!variable_instance_exists(inst, "data") || inst.data.hp <= 0) continue;
+    // 2) Award that XP to every surviving party member
+    var leveled_up = [];
+    if (ds_exists(global.battle_party, ds_type_list)) {
+        for (var i = 0; i < ds_list_size(global.battle_party); i++) {
+            var inst = global.battle_party[| i];
+            if (!instance_exists(inst)) continue;
+            if (!variable_instance_exists(inst, "data") || inst.data.hp <= 0) continue;
 
-                var key = inst.character_key;
-                if (script_exists(scr_AddXPToCharacter)) {
-                    var did_level = scr_AddXPToCharacter(key, total_xp_from_battle);
-                    if (did_level) array_push(leveled_up, inst.data.name);
-                }
+            var key = inst.character_key;
+            if (script_exists(scr_AddXPToCharacter)) {
+                var did_level = scr_AddXPToCharacter(key, total_xp_from_battle);
+                if (did_level) array_push(leveled_up, inst.data.name);
             }
         }
-
-        // Show dialogue message
-        var msgs = [];
-        array_push(msgs, { name: "Victory!", msg: "Gained " + string(total_xp_from_battle) + " XP!" });
-
-        if (array_length(leveled_up) > 0) {
-            var msg = (array_length(leveled_up) == 1)
-                ? (leveled_up[0] + " leveled up!")
-                : (string_join(leveled_up, ", ") + " leveled up!");
-            array_push(msgs, { name: "System", msg: msg });
-        }
-
-        if (script_exists(create_dialog)) {
-            create_dialog(msgs);
-        }
-
-        global.battle_state = "return_to_field";
-        alarm[0] = 60;
     }
-    break;
+
+    // 3) Show dialogue
+    var msgs = [];
+    array_push(msgs, { name:"Victory!", msg:"Gained " + string(total_xp_from_battle) + " XP!" });
+    if (array_length(leveled_up) > 0) {
+        var msg = (array_length(leveled_up) == 1)
+            ? (leveled_up[0] + " leveled up!")
+            : (string_join(leveled_up,", ") + " leveled up!");
+        array_push(msgs, { name:"System", msg: msg });
+    }
+    if (script_exists(create_dialog)) create_dialog(msgs);
+
+    global.battle_state = "return_to_field";
+    alarm[0] = 60;
+}
+break;
 
     case "defeat":
     {

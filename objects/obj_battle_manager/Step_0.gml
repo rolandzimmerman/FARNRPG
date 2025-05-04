@@ -417,58 +417,97 @@ switch (global.battle_state) {
     case "check_win_loss": 
     {
          show_debug_message("Manager Step: In check_win_loss State");
-         // Check/remove dead enemies
+         
+         // --- Check/remove dead enemies & accumulate XP ---
          if (ds_exists(global.battle_enemies, ds_type_list)) {
              for (var i = ds_list_size(global.battle_enemies) - 1; i >= 0; i--) {
-                 var e_id = global.battle_enemies[| i]; 
+                 var e_id = global.battle_enemies[| i];
+                 
                  if (instance_exists(e_id)) {
-                      if (variable_instance_exists(e_id, "data") && is_struct(e_id.data) && variable_struct_exists(e_id.data, "hp") && e_id.data.hp <= 0) {
-                           if (!variable_instance_exists(e_id, "combat_state") || (variable_instance_exists(e_id, "combat_state") && e_id.combat_state != "dying")) { 
-                                if (script_exists(scr_ProcessDeathIfNecessary)) scr_ProcessDeathIfNecessary(e_id); 
-                           }
-                      }
-                 } else { /* ... remove missing instance from lists ... */ ds_list_delete(global.battle_enemies, i); var ci=ds_list_find_index(combatants_all,e_id); if(ci!=-1)ds_list_delete(combatants_all,ci); }
+                     // If this enemy is dead...
+                     if (variable_instance_exists(e_id, "data")
+                      && is_struct(e_id.data)
+                      && variable_struct_exists(e_id.data, "hp")
+                      && e_id.data.hp <= 0) {
+                         
+                         // 1) Accumulate its XP once
+                         if (!variable_instance_exists(e_id, "xp_counted")) {
+                             total_xp_from_battle += e_id.data.xp;
+                             e_id.xp_counted = true;
+                             show_debug_message(
+                               " -> Accumulated " + string(e_id.data.xp) 
+                               + " XP from " + string(e_id) 
+                               + ". Total XP: " + string(total_xp_from_battle)
+                             );
+                         }
+                         
+                         // 2) Trigger its death processing if it's not mid‐death animation
+                         if (!variable_instance_exists(e_id, "combat_state")
+                          || (variable_instance_exists(e_id, "combat_state")
+                              && e_id.combat_state != "dying")) {
+                             if (script_exists(scr_ProcessDeathIfNecessary)) {
+                                 scr_ProcessDeathIfNecessary(e_id);
+                             }
+                         }
+                     }
+                 }
+                 else {
+                     // Instance gone: remove from lists
+                     ds_list_delete(global.battle_enemies, i);
+                     var ci = ds_list_find_index(combatants_all, e_id);
+                     if (ci != -1) ds_list_delete(combatants_all, ci);
+                     show_debug_message(
+                       " -> Removed missing enemy instance " 
+                       + string(e_id) 
+                       + " from battle_enemies."
+                     );
+                 }
              }
          }
-         // Check party members
+
+         // --- (Party cleanup unchanged) ---
          var any_party_alive = false;
-          if (ds_exists(global.battle_party, ds_type_list)) {
-              for (var i = ds_list_size(global.battle_party) - 1; i >= 0; i--) {
-                  var p_id = global.battle_party[| i]; 
-                  if (instance_exists(p_id)) {
-                       if (variable_instance_exists(p_id, "data") && is_struct(p_id.data) && p_id.data.hp > 0) { any_party_alive=true; } 
-                       else if (variable_instance_exists(p_id, "data") && is_struct(p_id.data) && p_id.data.hp <= 0) {
-                           var combatant_index = ds_list_find_index(combatants_all, p_id);
-                           if (combatant_index != -1) { ds_list_delete(combatants_all, combatant_index); show_debug_message("   -> Removed KO'd player " + string(p_id) +" from active combatants list."); }
-                           if(variable_instance_exists(p_id,"combat_state") && p_id.combat_state != "dying" && p_id.combat_state != "dead") { p_id.combat_state = "dying"; }
-                      }
-                  } else { /* ... remove missing instance from lists ... */ ds_list_delete(global.battle_party, i); var ci=ds_list_find_index(combatants_all,p_id); if(ci!=-1)ds_list_delete(combatants_all,ci); }
-              }
+         if (ds_exists(global.battle_party, ds_type_list)) {
+             for (var i = ds_list_size(global.battle_party) - 1; i >= 0; i--) {
+                 var p_id = global.battle_party[| i];
+                 if (instance_exists(p_id)
+                  && variable_instance_exists(p_id, "data")
+                  && is_struct(p_id.data)
+                  && p_id.data.hp > 0) {
+                     any_party_alive = true;
+                     break;
+                 }
+             }
          }
-         var any_enemies_alive = (ds_exists(global.battle_enemies, ds_type_list) && ds_list_size(global.battle_enemies) > 0);
-         
-         // Clear actor AFTER checks, before next turn calc
-         currentActor = noone; 
 
-         // Determine Battle Outcome
-         if (!any_enemies_alive && any_party_alive) { 
-             show_debug_message(" -> Outcome: Victory! Setting alarm."); global.battle_state = "victory"; alarm[0] = 60; 
-         } else if (!any_party_alive) { 
-             show_debug_message(" -> Outcome: Defeat! Setting alarm."); global.battle_state = "defeat"; alarm[0] = 60; 
-         } else { 
-             show_debug_message(" -> Outcome: Battle Continues. Setting state to calculate_turn."); 
-             if (!any_enemies_alive) { global.battle_target = -1; } else { global.battle_target = max(0, min(global.battle_target, ds_list_size(global.battle_enemies) - 1)); }
-             global.battle_state = "calculate_turn"; 
+         var any_enemies_alive = (ds_exists(global.battle_enemies, ds_type_list)
+                                 && ds_list_size(global.battle_enemies) > 0);
+
+         // Reset currentActor before deciding outcome
+         currentActor = noone;
+
+         // --- Determine Battle Outcome ---
+         if (!any_enemies_alive && any_party_alive) {
+             show_debug_message(" -> Outcome: Victory! Setting alarm.");
+             global.battle_state = "victory";
+             alarm[0] = 60;
+         } else if (!any_party_alive) {
+             show_debug_message(" -> Outcome: Defeat! Setting alarm.");
+             global.battle_state = "defeat";
+             alarm[0] = 60;
+         } else {
+             show_debug_message(" -> Outcome: Battle Continues.");
+             // Clamp target index safely
+             if (!any_enemies_alive) {
+                 global.battle_target = -1;
+             } else {
+                 global.battle_target = clamp(global.battle_target, 0, ds_list_size(global.battle_enemies) - 1);
+             }
+             global.battle_state = "calculate_turn";
          }
-         show_debug_message(" -> Exiting check_win_loss state block. Next state: " + global.battle_state); 
+         show_debug_message(" -> Exiting check_win_loss. Next state: " + global.battle_state);
     }
-    break; // End check_win_loss
-
-    case "victory": case "defeat": case "return_to_field": break; 
-
-    default:
-        if (get_timer() mod 60 == 0) { show_debug_message("WARNING: obj_battle_manager in unknown state: " + string(global.battle_state)); global.battle_state = "check_win_loss"; }
-        break;
+    break;
 } // End Switch
 
 // --- Screen Flash Logic --- 

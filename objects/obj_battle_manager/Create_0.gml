@@ -150,6 +150,30 @@ if (variable_global_exists("battle_formation") && is_array(global.battle_formati
 show_debug_message("--- Finished Enemy spawn, count: " + string(ds_list_size(global.battle_enemies)) + " ---");
 show_debug_message("--- Total Combatants for Speed Queue: " + string(ds_list_size(combatants_all)) + " ---");
 
+// --- RECORD INITIAL ENEMY XP FOR LATER ---
+if (ds_exists(global.battle_enemies, ds_type_list)) {
+    // Create a list to hold each enemy's XP
+    if (variable_instance_exists(id, "initial_enemy_xp")) {
+        ds_list_destroy(initial_enemy_xp);
+    }
+    initial_enemy_xp = ds_list_create();
+    // For each enemy instance, grab its data.xp
+    for (var i = 0; i < ds_list_size(global.battle_enemies); i++) {
+        var e = global.battle_enemies[| i];
+        if (instance_exists(e)
+         && variable_instance_exists(e, "data")
+         && is_struct(e.data)
+         && variable_struct_exists(e.data, "xp")) {
+            ds_list_add(initial_enemy_xp, e.data.xp);
+        } else {
+            ds_list_add(initial_enemy_xp, 0);
+        }
+    }
+    show_debug_message(" -> Recorded XP for " 
+        + string(ds_list_size(initial_enemy_xp))
+        + " enemies.");
+}
+
 // --- Create Battle Menu ---
 show_debug_message("--- Creating battle menu ---");
 var gui_layer_name = "Instances"; 
