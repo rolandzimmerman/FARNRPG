@@ -18,6 +18,9 @@ attack_fx_sound = snd_punch; // Default, manager might override based on data
 attack_animation_finished = false; 
 death_anim_speed = 1; // or whatever you like
 death_started    = false;
+// track if we've already dropped or been stolen from
+has_been_dropped = false;
+has_been_stolen = false;
 
 
 // **REMOVED from here:** Code accessing 'data' like:

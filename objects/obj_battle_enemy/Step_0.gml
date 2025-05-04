@@ -156,7 +156,20 @@ case "dying":
     break;
 
 case "corpse":
-    // do nothing
+    // run drop logic once
+    if (!has_been_dropped) {
+        has_been_dropped = true;
+        var drops = (variable_struct_exists(data, "drop_table") && is_array(data.drop_table))
+                  ? data.drop_table : [];
+        for (var i = 0; i < array_length(drops); i++) {
+            var e = drops[i];
+            if (irandom(999)/1000 < e.chance) {
+                scr_AddInventoryItem(e.item_key, 1);
+                show_debug_message(" Enemy " + string(id) + " dropped: " + e.item_key);
+            }
+        }
+    }
+    // static corpse—nothing else
     break;
            
 } // End Switch
