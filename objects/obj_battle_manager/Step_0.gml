@@ -54,52 +54,52 @@ switch (global.battle_state) {
         if (!_party_alive) { global.battle_state = "defeat"; alarm[0] = 1; break; }
         if (!_enemies_alive && !_party_alive) { global.battle_state = "defeat"; alarm[0] = 1; break; } 
 
-        // --- Calculate next turn ---
-        var turn_result = script_exists(scr_SpeedQueue) ? scr_SpeedQueue(combatants_all, BASE_TICK_VALUE) : { actor: noone, time_advance: 0 };
-        currentActor = turn_result.actor;
+    // --- Determine next actor via speed queue ---
+    var turn_result = script_exists(scr_SpeedQueue)
+                    ? scr_SpeedQueue(combatants_all, BASE_TICK_VALUE)
+                    : { actor: noone, time_advance: 0 };
+    currentActor = turn_result.actor;
 
-        if (currentActor == noone) {
-            show_debug_message(" -> No valid actor found by speed queue. Checking win/loss.");
-            global.battle_state = "check_win_loss"; 
-        } else {
-            // --- Check for Turn Skipping Status Effects ---
-            var skip_turn = false;
-            var status_info = script_exists(scr_GetStatus) ? scr_GetStatus(currentActor) : undefined;
-            if (is_struct(status_info)) { 
-                 if (status_info.effect == "shame" || (status_info.effect == "bind" && irandom(99)<50)) {
-                     skip_turn=true; 
-                     show_debug_message(" -> Actor " + string(currentActor) + " turn skipped due to Status: " + status_info.effect + "!");
-                 }
-            }
-            
-            if (skip_turn) {
-                 global.battle_state = "action_complete"; 
-            } else {
-                 // --- Determine Next State (Input or Enemy AI) ---
-                 if (currentActor.object_index == obj_battle_player) { 
-                     show_debug_message(" -> Next Actor is Player: " + string(currentActor)); 
-                     stored_action_data = undefined; 
-                     selected_target_id = noone;
-                     var list_index = ds_list_find_index(global.battle_party, currentActor); 
-                     if (list_index == -1) {
-                          show_debug_message("CRITICAL ERROR: Current player actor " + string(currentActor) + " not found in global.battle_party list! Skipping turn.");
-                          currentActor = noone; 
-                          global.battle_state = "action_complete"; 
-                     } else {
-                          global.active_party_member_index = list_index; 
-                          show_debug_message(" -> Set active_party_member_index to: " + string(list_index));
-                          global.battle_state = "player_input"; 
-                          show_debug_message(" -> Set battle_state to: player_input"); 
-                     }
-                 } else { // Assume enemy 
-                     show_debug_message(" -> Next Actor is Enemy: " + string(currentActor));
-                     global.battle_state = "enemy_turn"; 
-                     show_debug_message(" -> Set battle_state to: enemy_turn"); 
-                 }
-            }
-        }
+    if (currentActor == noone) {
+        show_debug_message(" -> No valid actor found. Checking win/loss.");
+        global.battle_state = "check_win_loss";
+        break;
     }
-    break; // End "calculate_turn"
+
+    // --- Check for BIND (skip turn) ---
+    var status_info = script_exists(scr_GetStatus)
+                    ? scr_GetStatus(currentActor)
+                    : undefined;
+    if (is_struct(status_info) && status_info.effect == "bind") {
+        show_debug_message(" -> Actor " + string(currentActor)
+                         + " is bound and skips their turn.");
+        global.battle_state = "action_complete";
+        break;
+    }
+
+    // --- Normal flow: Player vs Enemy ---
+    if (currentActor.object_index == obj_battle_player) {
+        show_debug_message(" -> Next Actor is Player: " + string(currentActor));
+        stored_action_data     = undefined;
+        selected_target_id     = noone;
+
+        var idx = ds_list_find_index(global.battle_party, currentActor);
+        if (idx == -1) {
+            show_debug_message("ERROR: Player actor not in party list. Skipping turn.");
+            global.battle_state = "action_complete";
+        } else {
+            global.active_party_member_index = idx;
+            show_debug_message(" -> active_party_member_index = " + string(idx));
+            global.battle_state = "player_input";
+            show_debug_message(" -> battle_state = player_input");
+        }
+    } else {
+        show_debug_message(" -> Next Actor is Enemy: " + string(currentActor));
+        global.battle_state = "enemy_turn";
+        show_debug_message(" -> battle_state = enemy_turn");
+    }
+}
+break;
 
     case "player_input": case "skill_select": case "item_select":
         // Wait for player input (handled by obj_battle_player Step)

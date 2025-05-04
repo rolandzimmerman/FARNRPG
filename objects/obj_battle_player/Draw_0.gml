@@ -26,3 +26,11 @@ if (combat_state == "item_start" || combat_state == "item_return") {
         );
     }
 }
+// 3) Overlay Status Icon
+var st = scr_GetStatus(id);
+if (is_struct(st) && st.effect != "none") {
+    var icon_idx = scr_GetStatusIcon(st.effect);
+    if (icon_idx != -1 && sprite_exists(icon_idx)) {
+        draw_sprite_ext(icon_idx, 0, x, bbox_top - 16, 1,1, 0, c_white, 1);
+    }
+}

@@ -1,10 +1,10 @@
 /// obj_battle_enemy :: Draw Event
 var _data_exists = is_struct(data);
-show_debug_message("Enemy Draw: ID " + string(id)
+/*show_debug_message("Enemy Draw: ID " + string(id)
   + ", State: " + string(combat_state)
   + ", Data Exists: " + string(_data_exists)
   + ", Sprite: " + sprite_get_name(sprite_index)
-);
+); */
 
 // If invisible or alpha 0, skip all drawing
 if (!visible || image_alpha <= 0) {
@@ -54,6 +54,14 @@ if (_data_exists
     draw_rectangle(bx, by, bx + w*ratio, by+h, false);
 
     draw_set_alpha(1);
+}
+
+var st = scr_GetStatus(id);
+if (is_struct(st) && st.effect != "none") {
+    var icon_idx = scr_GetStatusIcon(st.effect);
+    if (icon_idx != -1 && sprite_exists(icon_idx)) {
+        draw_sprite_ext(icon_idx, 0, x, bbox_top - 16, 1,1, 0, c_white, 1);
+    }
 }
 
 // Reset draw settings

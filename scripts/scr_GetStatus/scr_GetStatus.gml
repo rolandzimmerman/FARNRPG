@@ -1,22 +1,13 @@
 /// @function scr_GetStatus(target_inst)
-/// @description Checks the global map and returns the status struct for an instance.
-/// @param {Id.Instance} target_inst   The instance to check.
-/// @returns {Struct / Undefined} The status struct {effect, duration} or undefined if no status or map missing.
-
+/// @returns {Struct/undefined} { effect, duration } or undefined if none
 function scr_GetStatus(target_inst) {
-    // Basic validation
-    if (!instance_exists(target_inst)) {
+    if (!instance_exists(target_inst)) return undefined;
+    if (!variable_global_exists("battle_status_effects")
+     || !ds_exists(global.battle_status_effects, ds_type_map)) {
         return undefined;
     }
-    if (!variable_global_exists("battle_status_effects") || !ds_exists(global.battle_status_effects, ds_type_map)) {
-        // Map might not be created yet or was destroyed prematurely
-        // show_debug_message("Warning [GetStatus]: global.battle_status_effects map missing!");
-        return undefined;
-    }
-
-    var inst_id = target_inst.id; // Get the instance ID to use as the key
+    var inst_id = target_inst.id;
     var status_data = ds_map_find_value(global.battle_status_effects, inst_id);
-
-    // ds_map_find_value returns undefined if key not found, which is desired behavior
+    // ds_map_find_value gives undefined if key not found
     return status_data;
 }

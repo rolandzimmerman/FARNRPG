@@ -1,36 +1,43 @@
 /// @function scr_ApplyStatus(target_inst, effect_name, duration)
 /// @description Applies a status effect to a target instance by updating the global map.
-/// @param {Id.Instance} target_inst   The instance to affect.
-/// @param {String}      effect_name   The name of the status (e.g., "poison", "blind").
-/// @param {Real}        duration      The number of turns the status should last.
-
+/// @returns {Bool} True if the status was applied, false otherwise.
 function scr_ApplyStatus(target_inst, effect_name, duration) {
-    // Validate inputs
+    // 1) Validate inputs
     if (!instance_exists(target_inst)) {
-        show_debug_message("ERROR [ApplyStatus]: Target instance does not exist.");
-        return;
+        show_debug_message("ERROR [ApplyStatus]: target does not exist.");
+        return false;
     }
     if (!is_string(effect_name) || effect_name == "none") {
-        show_debug_message("ERROR [ApplyStatus]: Invalid effect name provided.");
-        return; // Don't apply "none" or invalid names
+        show_debug_message("ERROR [ApplyStatus]: invalid effect name.");
+        return false;
     }
-    if (!is_numeric(duration) || duration <= 0) {
-        show_debug_message("ERROR [ApplyStatus]: Invalid duration provided.");
-        return; // Duration must be positive
-    }
-
-    // Ensure the global map exists
-    if (!variable_global_exists("battle_status_effects") || !ds_exists(global.battle_status_effects, ds_type_map)) {
-        show_debug_message("ERROR [ApplyStatus]: global.battle_status_effects map missing! Creating...");
-        global.battle_status_effects = ds_map_create(); // Attempt to recover
+    if (!is_real(duration) || duration <= 0) {
+        show_debug_message("ERROR [ApplyStatus]: invalid duration.");
+        return false;
     }
 
-    var inst_id = target_inst.id; // Use instance ID as the key
+    // 2) Ensure map exists
+    if (!variable_global_exists("battle_status_effects")
+     || !ds_exists(global.battle_status_effects, ds_type_map)) {
+        show_debug_message("CREATING status map...");
+        global.battle_status_effects = ds_map_create();
+    }
+
+    var inst_id = target_inst.id;
     var status_data = {
-        effect: effect_name,
-        duration: round(duration) // Ensure duration is an integer
+        effect   : effect_name,
+        duration : round(duration)
     };
 
-    show_debug_message(" -> Applying status '" + effect_name + "' to " + string(inst_id) + " for " + string(duration) + " turns.");
-    ds_map_replace(global.battle_status_effects, inst_id, status_data); // Replace existing or add new entry
+    // 3) Add or replace
+    if (ds_map_exists(global.battle_status_effects, inst_id)) {
+        ds_map_replace(global.battle_status_effects, inst_id, status_data);
+    } else {
+        ds_map_add   (global.battle_status_effects, inst_id, status_data);
+    }
+
+    show_debug_message(" -> Applied '" + effect_name 
+                     + "' to " + string(inst_id) 
+                     + " for " + string(duration) + " turns.");
+    return true;
 }
