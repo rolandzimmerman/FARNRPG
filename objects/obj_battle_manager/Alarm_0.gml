@@ -5,8 +5,6 @@ switch (global.battle_state) {
 
 case "victory":
 {
-    show_debug_message("🏆 Victory! Summing XP from initial_enemy_xp...");
-
     // 1) Sum total XP from the recorded list
     total_xp_from_battle = 0;
     if (variable_instance_exists(id, "initial_enemy_xp")
@@ -17,35 +15,68 @@ case "victory":
     }
     show_debug_message(" -> Total XP to award: " + string(total_xp_from_battle));
 
-    // 2) Award that XP to every surviving party member
-    var leveled_up = [];
+    // 2) Log victory
+    scr_AddBattleLog("Victory! Gained " + string(total_xp_from_battle) + " XP.");
+    with (obj_battle_log) holdAtEnd = true;
+
+    // 3) Award XP and collect level-up info
+    var _infos = [];
     if (ds_exists(global.battle_party, ds_type_list)) {
         for (var i = 0; i < ds_list_size(global.battle_party); i++) {
             var inst = global.battle_party[| i];
             if (!instance_exists(inst)) continue;
             if (!variable_instance_exists(inst, "data") || inst.data.hp <= 0) continue;
 
-            var key = inst.character_key;
-            if (script_exists(scr_AddXPToCharacter)) {
-                var did_level = scr_AddXPToCharacter(key, total_xp_from_battle);
-                if (did_level) array_push(leveled_up, inst.data.name);
+            // — capture OLD effective stats (includes equipment!)
+            var before = scr_GetPlayerData(inst.character_key);
+            var oldStats = {
+                maxhp: before.maxhp,
+                maxmp: before.maxmp,
+                atk:   before.atk,
+                def:   before.def,
+                matk:  before.matk,
+                mdef:  before.mdef,
+                spd:   before.spd,
+                luk:   before.luk
+            };
+
+            // — award XP via your existing script (returns true if leveled)
+            var didLevel = scr_AddXPToCharacter(inst.character_key, total_xp_from_battle);
+
+            if (didLevel) {
+                // — capture NEW effective stats after leveling
+                var after = scr_GetPlayerData(inst.character_key);
+                var newStats = {
+                    maxhp: after.maxhp,
+                    maxmp: after.maxmp,
+                    atk:   after.atk,
+                    def:   after.def,
+                    matk:  after.matk,
+                    mdef:  after.mdef,
+                    spd:   after.spd,
+                    luk:   after.luk
+                };
+
+                array_push(_infos, {
+                    name: inst.data.name ?? "Unknown",
+                    old:  oldStats,
+                    new:  newStats
+                });
             }
         }
     }
+    global.battle_level_up_infos = _infos;
 
-    // 3) Show dialogue
-scr_AddBattleLog("Victory! Gained " + string(total_xp_from_battle) + " XP.");
-
-// then freeze the log:
-with (obj_battle_log) {
-    holdAtEnd = true;
-}
-
-    global.battle_state = "return_to_field";
-    alarm[0] = 60;
+    // 4) If anyone leveled, show the popup; otherwise return to field
+    if (array_length(_infos) > 0) {
+        global.battle_state = "show_levelup";
+        instance_create_layer(0, 0, "Instances", obj_levelup_popup);
+    } else {
+        global.battle_state = "return_to_field";
+        alarm[0] = 60;
+    }
 }
 break;
-
     case "defeat":
     {
         show_debug_message("💀 Defeat! Showing game over dialog...");

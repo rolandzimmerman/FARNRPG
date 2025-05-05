@@ -89,6 +89,7 @@
     {"id":{"name":"obj_game_manager","path":"objects/obj_game_manager/obj_game_manager.yy",},},
     {"id":{"name":"obj_init","path":"objects/obj_init/obj_init.yy",},},
     {"id":{"name":"obj_item_menu_field","path":"objects/obj_item_menu_field/obj_item_menu_field.yy",},},
+    {"id":{"name":"obj_levelup_popup","path":"objects/obj_levelup_popup/obj_levelup_popup.yy",},},
     {"id":{"name":"obj_minimap","path":"objects/obj_minimap/obj_minimap.yy",},},
     {"id":{"name":"obj_music_manager","path":"objects/obj_music_manager/obj_music_manager.yy",},},
     {"id":{"name":"obj_npc_1","path":"objects/obj_npc_1/obj_npc_1.yy",},},
