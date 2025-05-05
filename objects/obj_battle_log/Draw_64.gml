@@ -1,7 +1,11 @@
-// Draw background box
+/// obj_battle_log :: Draw Event
+// 1) Snap to the very end
+currentIndex = array_length(logEntries) - 1;
+
+// 2) Draw background box
 var sw = sprite_get_width(spr_box1);
 var sh = sprite_get_height(spr_box1);
-var bw = 500;    // box width
+var bw = 500;    
 var bh = maxVisibleLines * lineHeight + boxPadding * 2;
 draw_sprite_ext(
     spr_box1, 0,
@@ -12,7 +16,7 @@ draw_sprite_ext(
     0, c_white, 0.9
 );
 
-// Draw only the last maxVisibleLines entries
+// 3) Draw only the last maxVisibleLines entries
 var startIdx = max(0, currentIndex + 1 - maxVisibleLines);
 for (var i = 0; i <= min(currentIndex, maxVisibleLines - 1); i++) {
     var entry = logEntries[startIdx + i];
