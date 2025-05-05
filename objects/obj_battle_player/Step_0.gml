@@ -240,8 +240,6 @@ break; // End "skill_select"
                           var item_data = scr_GetItemData(item_info.item_key); 
                           
                           if (is_struct(item_data)) {
-                              // Consume item 
-                              if (script_exists(scr_RemoveInventoryItem)) { if (!scr_RemoveInventoryItem(item_info.item_key, 1)) { break; } } else { break; }
 
                               obj_battle_manager.stored_action_data = item_data; 
                               
@@ -442,10 +440,7 @@ case "cast_start":
                       var item_data = scr_GetItemData(item_info.item_key); 
                       
                       if (is_struct(item_data)) {
-                          // Consume item from inventory NOW
-                          if (script_exists(scr_RemoveInventoryItem)) {
-                               if (!scr_RemoveInventoryItem(item_info.item_key, 1)) { break; } // Exit if removal fails
-                          } else { break; } // Exit if script missing
+
 
                           obj_battle_manager.stored_action_data = item_data; // Store item definition struct
                           
