@@ -1,56 +1,41 @@
 /// @function scr_UpdateStatusEffects()
 function scr_UpdateStatusEffects() {
-    if (!variable_global_exists("battle_status_effects")
-     || !ds_exists(global.battle_status_effects, ds_type_map)) {
-        return;
-    }
+    scr_AddBattleLog("UpdateStatusEffects START");
+    if (!variable_global_exists("battle_status_effects")) return;
+    var map = global.battle_status_effects;
+    var keys = ds_map_keys_to_array(map);
+    var to_remove = ds_list_create();
 
-    var status_map   = global.battle_status_effects;
-    var inst_ids     = ds_map_keys_to_array(status_map);
-    var to_remove_ds = ds_list_create();
-
-    // 1) Process each
-    for (var i = 0; i < array_length(inst_ids); i++) {
-        var inst_id      = inst_ids[i];
-        var status_data  = ds_map_find_value(status_map, inst_id);
-        if (!instance_exists(inst_id) || !is_struct(status_data)) {
-            ds_list_add(to_remove_ds, inst_id);
+    for (var i = 0; i < array_length(keys); i++) {
+        var inst = keys[i];
+        var sd   = ds_map_find_value(map, inst);
+        if (!instance_exists(inst)) {
+            ds_list_add(to_remove, inst);
+            scr_AddBattleLog("Status target gone: " + string(inst));
             continue;
         }
-
-        var effect   = status_data.effect;
-        var duration = status_data.duration;
-        var inst     = inst_id; // now we can treat it as the instance
-
-        // DOT/HOT
-        if (variable_instance_exists(inst, "data") && is_struct(inst.data)) {
-            var td = inst.data;
-            if (td.hp > 0) {
-                switch (effect) {
-                    case "poison":
-                        td.hp = max(0, td.hp - 5);
-                        break;
-                    case "regen":
-                        td.hp = min(td.maxhp, td.hp + 8);
-                        break;
-                }
-                // (you can still call scr_ProcessDeathIfNecessary(inst) here)
-            }
+        scr_AddBattleLog("Processing status on " + string(inst) + ": " + sd.effect + " (" + string(sd.duration) + ")");
+        switch (sd.effect) {
+            case "poison":
+                inst.data.hp = max(0, inst.data.hp - 5);
+                scr_AddBattleLog("Poison tick: HP→" + string(inst.data.hp));
+                break;
+            case "regen":
+                inst.data.hp = min(inst.data.maxhp, inst.data.hp + 8);
+                scr_AddBattleLog("Regen tick: HP→" + string(inst.data.hp));
+                break;
         }
-
-        // decrement
-        duration -= 1;
-        if (duration <= 0) {
-            ds_list_add(to_remove_ds, inst_id);
+        sd.duration -= 1;
+        if (sd.duration <= 0) {
+            ds_list_add(to_remove, inst);
+            scr_AddBattleLog("Status expired on " + string(inst));
         } else {
-            status_data.duration = duration;
-            ds_map_replace(status_map, inst_id, status_data);
+            ds_map_replace(map, inst, sd);
         }
     }
-
-    // 2) Clean up
-    for (var j = 0; j < ds_list_size(to_remove_ds); j++) {
-        ds_map_delete(status_map, to_remove_ds[| j]);
+    for (var j = 0; j < ds_list_size(to_remove); j++) {
+        ds_map_delete(map, to_remove[|j]);
     }
-    ds_list_destroy(to_remove_ds);
+    ds_list_destroy(to_remove);
+    scr_AddBattleLog("UpdateStatusEffects END");
 }

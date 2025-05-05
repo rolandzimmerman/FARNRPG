@@ -34,15 +34,12 @@ case "victory":
     }
 
     // 3) Show dialogue
-    var msgs = [];
-    array_push(msgs, { name:"Victory!", msg:"Gained " + string(total_xp_from_battle) + " XP!" });
-    if (array_length(leveled_up) > 0) {
-        var msg = (array_length(leveled_up) == 1)
-            ? (leveled_up[0] + " leveled up!")
-            : (string_join(leveled_up,", ") + " leveled up!");
-        array_push(msgs, { name:"System", msg: msg });
-    }
-    if (script_exists(create_dialog)) create_dialog(msgs);
+scr_AddBattleLog("Victory! Gained " + string(total_xp_from_battle) + " XP.");
+
+// then freeze the log:
+with (obj_battle_log) {
+    holdAtEnd = true;
+}
 
     global.battle_state = "return_to_field";
     alarm[0] = 60;

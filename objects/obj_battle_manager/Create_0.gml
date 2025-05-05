@@ -195,7 +195,7 @@ if (script_exists(scr_CalculateTurnOrderDisplay)) {
      show_debug_message(" -> Calculated initial turn order display.");
 }
 global.battle_state = "calculate_turn"; 
-show_debug_message("🧱 Battle Manager Create DONE. Initial State: " + global.battle_state);
+show_debug_message("Battle Manager Create DONE. Initial State: " + global.battle_state);
 battle_fx_surface = -1;
 
 // <<< NEW: Initialize flag to ignore B for one frame when cancelling target select >>>
