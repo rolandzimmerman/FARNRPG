@@ -2,7 +2,7 @@
 /// @description Uses an item, applies effect, logs to battle log, and returns true if consumed.
 function scr_UseItem(_user_inst, _item_data, _target_inst) {
     // Entry log
-    scr_AddBattleLog("--- UseItem START: " + (_item_data.item_key ?? "?") + " by " + string(_user_inst));
+    //scr_AddBattleLog("--- UseItem START: " + (_item_data.item_key ?? "?") + " by " + string(_user_inst));
 
     var effect  = _item_data.effect;
     var success = false;
