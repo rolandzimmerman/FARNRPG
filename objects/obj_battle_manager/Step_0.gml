@@ -14,7 +14,6 @@ if (!variable_global_exists("battle_state")) {
     exit; 
 }
 
-
 switch (global.battle_state) {
 
     case "initializing":
@@ -48,63 +47,89 @@ switch (global.battle_state) {
         
         // --- Check for immediate win/loss conditions ---
         var _party_alive = false; var _enemies_alive = false;
-        if (ds_exists(global.battle_party, ds_type_list)) { for(var i=0; i<ds_list_size(global.battle_party); i++){var p=global.battle_party[|i]; if(instance_exists(p) && variable_instance_exists(p,"data") && is_struct(p.data) && p.data.hp > 0){_party_alive=true; break;}}}
-        if (ds_exists(global.battle_enemies, ds_type_list)) { for(var i=0; i<ds_list_size(global.battle_enemies); i++){var e=global.battle_enemies[|i]; if(instance_exists(e) && variable_instance_exists(e,"data") && is_struct(e.data) && e.data.hp > 0){_enemies_alive=true; break;}}}
+        if (ds_exists(global.battle_party, ds_type_list)) { 
+            for (var i=0; i<ds_list_size(global.battle_party); i++) {
+                var p = global.battle_party[|i];
+                if (instance_exists(p) && variable_instance_exists(p,"data") && is_struct(p.data) && p.data.hp > 0) {
+                    _party_alive = true; 
+                    break;
+                }
+            }
+        }
+        if (ds_exists(global.battle_enemies, ds_type_list)) { 
+            for (var i=0; i<ds_list_size(global.battle_enemies); i++) {
+                var e = global.battle_enemies[|i];
+                if (instance_exists(e) && variable_instance_exists(e,"data") && is_struct(e.data) && e.data.hp > 0) {
+                    _enemies_alive = true; 
+                    break;
+                }
+            }
+        }
         if (!_enemies_alive && _party_alive) { global.battle_state = "victory"; alarm[0] = 1; break; }
         if (!_party_alive) { global.battle_state = "defeat"; alarm[0] = 1; break; }
         if (!_enemies_alive && !_party_alive) { global.battle_state = "defeat"; alarm[0] = 1; break; } 
 
-    // --- Determine next actor via speed queue ---
-    var turn_result = script_exists(scr_SpeedQueue)
-                    ? scr_SpeedQueue(combatants_all, BASE_TICK_VALUE)
-                    : { actor: noone, time_advance: 0 };
-    currentActor = turn_result.actor;
+        // --- Determine next actor via speed queue ---
+        var turn_result = script_exists(scr_SpeedQueue)
+                        ? scr_SpeedQueue(combatants_all, BASE_TICK_VALUE)
+                        : { actor: noone, time_advance: 0 };
+        currentActor = turn_result.actor;
 
-    if (currentActor == noone) {
-        show_debug_message(" -> No valid actor found. Checking win/loss.");
-        global.battle_state = "check_win_loss";
-        break;
-    }
-
-    // --- Check for BIND (skip turn) ---
-    var status_info = script_exists(scr_GetStatus)
-                    ? scr_GetStatus(currentActor)
-                    : undefined;
-    if (is_struct(status_info) && status_info.effect == "bind") {
-        show_debug_message(" -> Actor " + string(currentActor)
-                         + " is bound and skips their turn.");
-        global.battle_state = "action_complete";
-        break;
-    }
-
-    // --- Normal flow: Player vs Enemy ---
-    if (currentActor.object_index == obj_battle_player) {
-        show_debug_message(" -> Next Actor is Player: " + string(currentActor));
-        stored_action_data     = undefined;
-        selected_target_id     = noone;
-
-        var idx = ds_list_find_index(global.battle_party, currentActor);
-        if (idx == -1) {
-            show_debug_message("ERROR: Player actor not in party list. Skipping turn.");
-            global.battle_state = "action_complete";
-        } else {
-            global.active_party_member_index = idx;
-            show_debug_message(" -> active_party_member_index = " + string(idx));
-            global.battle_state = "player_input";
-            show_debug_message(" -> battle_state = player_input");
+        // <<< NEW: update turnOrderDisplay immediately >>>
+        if (script_exists(scr_CalculateTurnOrderDisplay)) {
+            turnOrderDisplay = scr_CalculateTurnOrderDisplay(
+                combatants_all,
+                BASE_TICK_VALUE,
+                TURN_ORDER_DISPLAY_COUNT
+            );
+            show_debug_message(" -> Updated turnOrderDisplay after speed queue.");
         }
-    } else {
-        show_debug_message(" -> Next Actor is Enemy: " + string(currentActor));
-        global.battle_state = "enemy_turn";
-        show_debug_message(" -> battle_state = enemy_turn");
+
+        if (currentActor == noone) {
+            show_debug_message(" -> No valid actor found. Checking win/loss.");
+            global.battle_state = "check_win_loss";
+            break;
+        }
+
+        // --- Check for BIND (skip turn) ---
+        var status_info = script_exists(scr_GetStatus)
+                        ? scr_GetStatus(currentActor)
+                        : undefined;
+        if (is_struct(status_info) && status_info.effect == "bind") {
+            show_debug_message(" -> Actor " + string(currentActor)
+                             + " is bound and skips their turn.");
+            global.battle_state = "action_complete";
+            break;
+        }
+
+        // --- Normal flow: Player vs Enemy ---
+        if (currentActor.object_index == obj_battle_player) {
+            show_debug_message(" -> Next Actor is Player: " + string(currentActor));
+            stored_action_data     = undefined;
+            selected_target_id     = noone;
+
+            var idx = ds_list_find_index(global.battle_party, currentActor);
+            if (idx == -1) {
+                show_debug_message("ERROR: Player actor not in party list. Skipping turn.");
+                global.battle_state = "action_complete";
+            } else {
+                global.active_party_member_index = idx;
+                show_debug_message(" -> active_party_member_index = " + string(idx));
+                global.battle_state = "player_input";
+                show_debug_message(" -> battle_state = player_input");
+            }
+        } else {
+            show_debug_message(" -> Next Actor is Enemy: " + string(currentActor));
+            global.battle_state = "enemy_turn";
+            show_debug_message(" -> battle_state = enemy_turn");
+        }
     }
-}
-break;
+    break;
 
     case "player_input": case "skill_select": case "item_select":
         // Wait for player input (handled by obj_battle_player Step)
         if (instance_exists(currentActor)) { 
-            if(variable_instance_exists(currentActor,"data") && currentActor.data.hp <= 0) { 
+            if (variable_instance_exists(currentActor,"data") && currentActor.data.hp <= 0) { 
                 show_debug_message(" -> Player actor KO'd while in input state. Skipping turn.");
                 global.battle_state = "action_complete"; 
             }
@@ -261,7 +286,7 @@ break;
             var _target = selected_target_id;    // Target instance or noone
             var next_actor_state = "idle";     // Default state if action has no animation
             var _action_succeeded = false;       // Did the effect get applied (not missed/resisted etc)?
-            
+
             // --- 1. Apply Effect / Check Usability / Deduct Cost ---
             if (is_string(_action_data)) { // Basic Attack or Defend
                  if (_action_data == "Attack") {
@@ -406,7 +431,6 @@ break;
         stored_action_data = undefined; selected_target_id = noone; 
         global.active_party_member_index = -1; 
 
-
         show_debug_message(" -> Transitioning from action_complete to check_win_loss"); 
         global.battle_state = "check_win_loss"; 
     }
@@ -508,7 +532,7 @@ break;
     break;
 } // End Switch
 
-// --- Screen Flash Logic --- 
+// --- Screen Flash Logic ---
 if (screen_flash_timer > 0) { 
     screen_flash_timer -= 1;
     var fade_in_duration = max(1, floor(screen_flash_duration * 0.2)); 
@@ -523,4 +547,4 @@ if (screen_flash_timer > 0) {
     screen_flash_alpha = max(0, screen_flash_alpha - screen_flash_fade_speed * 2); 
 }
 
-show_debug_message("--- End of obj_battle_manager Step Event --- (State: " + global.battle_state + ")"); // <<< ADDED THIS LINE
+show_debug_message("--- End of obj_battle_manager Step Event --- (State: " + global.battle_state + ")");

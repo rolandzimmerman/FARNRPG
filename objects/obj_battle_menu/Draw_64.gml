@@ -300,53 +300,86 @@ if (_current_battle_state == "TargetSelect" // <<< Use string state
          }
     }
 // === Draw Turn Order Display ===
-if (instance_exists(obj_battle_manager) && variable_instance_exists(obj_battle_manager, "turnOrderDisplay") && is_array(obj_battle_manager.turnOrderDisplay)) {
-     var _turn_order = obj_battle_manager.turnOrderDisplay;
-     var _order_count = array_length(_turn_order);
-     
-     draw_set_halign(fa_left);
-     draw_set_valign(fa_middle);
-     
-     for (var i = 0; i < _order_count; i++) {
-         var _actor_id = _turn_order[i];
-         if (instance_exists(_actor_id)) {
-             var _draw_y = turn_order_y + i * turn_order_spacing;
-             var _name = "Unknown";
-             var _icon = noone; 
-             var _tint = c_white;
-             
-             // Get name 
-             if (variable_instance_exists(_actor_id, "data") && is_struct(_actor_id.data) && variable_struct_exists(_actor_id.data, "name")) {
-                  _name = _actor_id.data.name;
-             } else {
-                  _name = object_get_name(_actor_id.object_index); 
-             }
-             
-             // Determine icon/tint (Adapt to your assets)
-              if (_actor_id.object_index == obj_battle_player) { // Direct check
-                  // _icon = spr_player_portrait; 
-                  _tint = c_lime; 
-              } else { // Assume enemy
-                  // _icon = spr_enemy_icon; 
-                  _tint = c_red; 
-              }
-              // Dim if HP is 0?
-              if (variable_instance_exists(_actor_id, "data") && is_struct(_actor_id.data) && variable_struct_exists(_actor_id.data, "hp") && _actor_id.data.hp <= 0) {
-                   _tint = merge_color(_tint, c_dkgray, 0.6);
-              }
-             
-             // Draw icon or name
-             if (_icon != noone && sprite_exists(_icon)) {
-                 // draw_sprite_ext(_icon, 0, turn_order_x, _draw_y, turn_order_icon_size/sprite_get_width(_icon), turn_order_icon_size/sprite_get_height(_icon), 0, c_white, 1);
-                 // draw_text_color(turn_order_x + turn_order_icon_size + 5, _draw_y, _name, _tint,_tint,_tint,_tint, 1);
-                  draw_text_color(turn_order_x, _draw_y, "(Icon) "+_name, _tint,_tint,_tint,_tint, 1); // Placeholder if no icons yet
-             } else {
-                 draw_text_color(turn_order_x, _draw_y, _name, _tint,_tint,_tint,_tint, 1);
-             }
-             
-         }
-     }
+if (instance_exists(obj_battle_manager)
+ && variable_instance_exists(obj_battle_manager, "turnOrderDisplay")
+ && is_array(obj_battle_manager.turnOrderDisplay)) {
+    
+    var _turn_order  = obj_battle_manager.turnOrderDisplay;
+    var _order_count = array_length(_turn_order);
+    var padding     = 16;    // 8px padding on every side
+    var shift_right = 80;   // shift entire box 96px to the right
+
+    // Compute widest name for box width
+    var max_w = 0;
+    var _name;
+    for (var i = 0; i < _order_count; i++) {
+        var aid = _turn_order[i];
+        if (!instance_exists(aid)) continue;
+        if (variable_instance_exists(aid, "data")
+         && is_struct(aid.data)
+         && variable_struct_exists(aid.data, "name")) {
+            _name = aid.data.name;
+        } else {
+            _name = object_get_name(aid.object_index);
+        }
+        max_w = max(max_w, string_width(_name));
+    }
+
+    // --- Draw background box with padding and horizontal shift ---
+    var box_w = max_w + padding * 2;
+    var box_h = _order_count * turn_order_spacing + padding * 2;
+    var box_x = turn_order_x + shift_right - padding;  // shifted right, then back by padding
+    var box_y = turn_order_y - padding;
+    var sw    = sprite_get_width(spr_box1);
+    var sh    = sprite_get_height(spr_box1);
+
+    draw_sprite_ext(
+        spr_box1, 0,
+        box_x, box_y,
+        box_w / sw, box_h / sh,
+        0,
+        c_white, 0.8
+    );
+
+    draw_set_halign(fa_left);
+    draw_set_valign(fa_middle);
+
+    // --- Draw each entry inside the padded, shifted box ---
+    for (var i = 0; i < _order_count; i++) {
+        var _actor_id = _turn_order[i];
+        if (!instance_exists(_actor_id)) continue;
+
+        var _draw_y = turn_order_y + i * turn_order_spacing;
+        if (variable_instance_exists(_actor_id, "data")
+         && is_struct(_actor_id.data)
+         && variable_struct_exists(_actor_id.data, "name")) {
+            _name = _actor_id.data.name;
+        } else {
+            _name = object_get_name(_actor_id.object_index);
+        }
+
+        // Color based on type
+        var _tint = (_actor_id.object_index == obj_battle_player) ? c_lime : c_red;
+        // Dim if KO'd
+        if (variable_instance_exists(_actor_id, "data")
+         && is_struct(_actor_id.data)
+         && variable_struct_exists(_actor_id.data, "hp")
+         && _actor_id.data.hp <= 0) {
+            _tint = merge_color(_tint, c_dkgray, 0.6);
+        }
+
+        // Shift text same amount as box
+        draw_text_color(
+            turn_order_x + shift_right,  // text also shifted
+            _draw_y,
+            _name,
+            _tint, _tint, _tint, _tint,
+            1
+        );
+    }
 }
+
+
 
 
 // === Reset draw state ===
