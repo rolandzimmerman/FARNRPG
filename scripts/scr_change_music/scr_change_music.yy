@@ -5,8 +5,8 @@
   "isDnD":false,
   "name":"scr_change_music",
   "parent":{
-    "name":"Scripts",
-    "path":"folders/Scripts.yy",
+    "name":"Sound",
+    "path":"folders/Scripts/Sound.yy",
   },
   "resourceType":"GMScript",
   "resourceVersion":"2.0",

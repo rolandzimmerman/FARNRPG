@@ -5,8 +5,8 @@
   "isDnD":false,
   "name":"apply_resolution",
   "parent":{
-    "name":"Scripts",
-    "path":"folders/Scripts.yy",
+    "name":"Helpers",
+    "path":"folders/Scripts/Helpers.yy",
   },
   "resourceType":"GMScript",
   "resourceVersion":"2.0",

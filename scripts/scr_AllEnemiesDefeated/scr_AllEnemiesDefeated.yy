@@ -5,8 +5,8 @@
   "isDnD":false,
   "name":"scr_AllEnemiesDefeated",
   "parent":{
-    "name":"Scripts",
-    "path":"folders/Scripts.yy",
+    "name":"Battle",
+    "path":"folders/Scripts/Battle.yy",
   },
   "resourceType":"GMScript",
   "resourceVersion":"2.0",

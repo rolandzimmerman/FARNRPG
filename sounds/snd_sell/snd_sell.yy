@@ -1,6 +1,6 @@
 {
   "$GMSound":"",
-  "%Name":"Success1",
+  "%Name":"snd_sell",
   "audioGroupId":{
     "name":"audiogroup_default",
     "path":"audiogroups/audiogroup_default",
@@ -10,16 +10,16 @@
   "compression":0,
   "conversionMode":0,
   "duration":0.7327891,
-  "name":"Success1",
+  "name":"snd_sell",
   "parent":{
-    "name":"RPGMaker",
-    "path":"folders/Sounds/RPGMaker.yy",
+    "name":"Sounds",
+    "path":"folders/Sounds.yy",
   },
   "preload":false,
   "resourceType":"GMSound",
   "resourceVersion":"2.0",
   "sampleRate":44100,
-  "soundFile":"Success1.mp3",
+  "soundFile":"snd_sell.mp3",
   "type":0,
   "volume":1.0,
 }

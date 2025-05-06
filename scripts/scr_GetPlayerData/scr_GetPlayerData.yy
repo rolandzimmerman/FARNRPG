@@ -5,8 +5,8 @@
   "isDnD":false,
   "name":"scr_GetPlayerData",
   "parent":{
-    "name":"Scripts",
-    "path":"folders/Scripts.yy",
+    "name":"Party",
+    "path":"folders/Scripts/Party.yy",
   },
   "resourceType":"GMScript",
   "resourceVersion":"2.0",

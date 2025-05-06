@@ -5,8 +5,8 @@
   "isDnD":false,
   "name":"scr_ProcessDeathIfNecessary",
   "parent":{
-    "name":"Scripts",
-    "path":"folders/Scripts.yy",
+    "name":"Battle",
+    "path":"folders/Scripts/Battle.yy",
   },
   "resourceType":"GMScript",
   "resourceVersion":"2.0",

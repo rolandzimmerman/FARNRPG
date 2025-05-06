@@ -5,8 +5,8 @@
   "isDnD":false,
   "name":"scr_InitEncounterTable",
   "parent":{
-    "name":"Scripts",
-    "path":"folders/Scripts.yy",
+    "name":"Init",
+    "path":"folders/Scripts/Init.yy",
   },
   "resourceType":"GMScript",
   "resourceVersion":"2.0",

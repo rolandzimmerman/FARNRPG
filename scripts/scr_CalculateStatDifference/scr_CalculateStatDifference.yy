@@ -5,8 +5,8 @@
   "isDnD":false,
   "name":"scr_CalculateStatDifference",
   "parent":{
-    "name":"Scripts",
-    "path":"folders/Scripts.yy",
+    "name":"Equipment",
+    "path":"folders/Scripts/Equipment.yy",
   },
   "resourceType":"GMScript",
   "resourceVersion":"2.0",

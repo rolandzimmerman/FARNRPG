@@ -5,8 +5,8 @@
   "isDnD":false,
   "name":"scr_Currency",
   "parent":{
-    "name":"Scripts",
-    "path":"folders/Scripts.yy",
+    "name":"Shopping&inventory",
+    "path":"folders/Scripts/Shopping&inventory.yy",
   },
   "resourceType":"GMScript",
   "resourceVersion":"2.0",

@@ -5,8 +5,8 @@
   "isDnD":false,
   "name":"array_index_of",
   "parent":{
-    "name":"Scripts",
-    "path":"folders/Scripts.yy",
+    "name":"Helpers",
+    "path":"folders/Scripts/Helpers.yy",
   },
   "resourceType":"GMScript",
   "resourceVersion":"2.0",
