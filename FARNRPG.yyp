@@ -130,6 +130,7 @@
     {"id":{"name":"scr_CastSkill","path":"scripts/scr_CastSkill/scr_CastSkill.yy",},},
     {"id":{"name":"scr_CastSkillField","path":"scripts/scr_CastSkillField/scr_CastSkillField.yy",},},
     {"id":{"name":"scr_change_music","path":"scripts/scr_change_music/scr_change_music.yy",},},
+    {"id":{"name":"scr_Currency","path":"scripts/scr_Currency/scr_Currency.yy",},},
     {"id":{"name":"scr_dialogue","path":"scripts/scr_dialogue/scr_dialogue.yy",},},
     {"id":{"name":"scr_draw_sprite_nine_slice_manual","path":"scripts/scr_draw_sprite_nine_slice_manual/scr_draw_sprite_nine_slice_manual.yy",},},
     {"id":{"name":"scr_DrawiShadow","path":"scripts/scr_DrawiShadow/scr_DrawiShadow.yy",},},

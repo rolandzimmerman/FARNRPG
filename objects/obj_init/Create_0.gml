@@ -91,6 +91,7 @@ if (!variable_global_exists("party_inventory") || !is_array(global.party_invento
       show_debug_message("  -> global.party_inventory already exists.");
 }
 // --- END SHARED PARTY INVENTORY ---
+global.party_currency = 100;
 
 // --- Miscellaneous ---
 global.entry_direction = "none";

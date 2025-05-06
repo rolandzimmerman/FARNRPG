@@ -1,12 +1,16 @@
-/// @function scr_HaveItem(_item_key, _qty_needed)
-/// @description Returns true if the party has at least _qty_needed of _item_key in global.party_inventory.
-function scr_HaveItem(_item_key, _qty_needed) {
+/// @function scr_HaveItem(item_key, qty)
+/// @description Returns true if global.party_inventory has at least qty of item_key.
+function scr_HaveItem(_item_key, _qty) {
     if (!variable_global_exists("party_inventory") || !is_array(global.party_inventory)) return false;
+    var total = 0;
     for (var i = 0; i < array_length(global.party_inventory); i++) {
-        var ent = global.party_inventory[i];
-        if (is_struct(ent) && ent.item_key == _item_key && ent.quantity >= _qty_needed) {
-            return true;
+        var e = global.party_inventory[i];
+        if (is_struct(e) && variable_struct_exists(e, "item_key") && e.item_key == _item_key) {
+            total += (variable_struct_exists(e, "quantity") ? e.quantity : 0);
+            if (total >= _qty) return true;
         }
     }
     return false;
 }
+
+

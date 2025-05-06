@@ -95,6 +95,7 @@
     {"name":"scr_CastSkill","order":5,"path":"scripts/scr_CastSkill/scr_CastSkill.yy",},
     {"name":"scr_CastSkillField","order":37,"path":"scripts/scr_CastSkillField/scr_CastSkillField.yy",},
     {"name":"scr_change_music","order":43,"path":"scripts/scr_change_music/scr_change_music.yy",},
+    {"name":"scr_Currency","order":49,"path":"scripts/scr_Currency/scr_Currency.yy",},
     {"name":"scr_draw_sprite_nine_slice_manual","order":21,"path":"scripts/scr_draw_sprite_nine_slice_manual/scr_draw_sprite_nine_slice_manual.yy",},
     {"name":"scr_DrawiShadow","order":1,"path":"scripts/scr_DrawiShadow/scr_DrawiShadow.yy",},
     {"name":"scr_EnemyAttackRandom","order":24,"path":"scripts/scr_EnemyAttackRandom/scr_EnemyAttackRandom.yy",},

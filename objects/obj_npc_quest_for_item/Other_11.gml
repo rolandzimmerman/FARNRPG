@@ -31,7 +31,11 @@ if (scr_HaveItem("potion", 1)) {
           script_to_run: scr_AddXPToParty,
           script_args:   [500]
         },
-
+        {
+          name:"", msg:"",
+          script_to_run: scr_AddCurrency,
+          script_args:   [500]
+        },
         { name:"Boyo", msg:"Thanks, Dom!" }
     ];
 } else {

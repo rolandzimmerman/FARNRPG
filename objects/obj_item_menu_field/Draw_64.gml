@@ -12,7 +12,6 @@ if (font_exists(Font1)) {
 draw_set_halign(fa_left);
 draw_set_valign(fa_top);
 draw_set_color(c_white);
-draw_set_alpha(1.0);
 
 // --- Safety Checks ---
 if (!variable_instance_exists(id, "menu_state")) {
@@ -41,14 +40,14 @@ var pad                = 16;
 var title_h            = line_height;
 var list_select_color  = c_yellow;
 
-// --- Dim Background ---
+// 1) Draw Dim Background
 draw_set_alpha(0.7);
 draw_set_color(c_black);
 draw_rectangle(0, 0, gui_w, gui_h, false);
-draw_set_alpha(1.0);
+draw_set_alpha(1);
 draw_set_color(c_white);
 
-// --- Determine List & Box Dimensions ---
+// 2) Determine List & Box Dimensions
 var current_list_array = (menu_state == "item_select")
     ? usable_items
     : ((menu_state == "target_select" && variable_global_exists("party_members"))
@@ -62,24 +61,24 @@ var box_height = title_h + list_h + pad * 2;
 var box_x      = box_margin;
 var box_y      = (gui_h - box_height) / 2;
 
-// --- Draw Menu Box ---
+// 3) Draw Menu Box
 if (sprite_exists(spr_box1)) {
     draw_sprite_stretched(spr_box1, 0, box_x, box_y, box_width, box_height);
 } else {
     draw_set_alpha(0.8);
     draw_set_color(c_black);
     draw_rectangle(box_x, box_y, box_x + box_width, box_y + box_height, false);
-    draw_set_alpha(1.0);
+    draw_set_alpha(1);
     draw_set_color(c_white);
 }
 
-// --- Draw Title ---
+// 4) Draw Title
 var title_text = (menu_state == "item_select") ? "Items" : "Use Item On:";
 draw_set_halign(fa_center);
 draw_text(box_x + box_width / 2, box_y + pad, title_text);
 draw_set_halign(fa_left);
 
-// --- Draw Item or Target List ---
+// 5) Draw Item or Target List
 var list_start_y = box_y + pad + title_h;
 var list_x       = box_x + pad;
 
@@ -100,7 +99,7 @@ if (menu_state == "item_select") {
                 row_y + line_height - 2,
                 false
             );
-            draw_set_alpha(1.0);
+            draw_set_alpha(1);
             draw_set_color(c_white);
         }
 
@@ -143,7 +142,7 @@ if (menu_state == "item_select") {
                 row_y + line_height - 2,
                 false
             );
-            draw_set_alpha(1.0);
+            draw_set_alpha(1);
             draw_set_color(c_white);
         }
 
@@ -157,12 +156,11 @@ if (menu_state == "item_select") {
     }
 }
 
-// --- Preview Box (96×96) with spr_box1 background ---
+// 6) Draw Preview Box (96×96) with spr_box1 background
 var PREVIEW_SIZE = 96;
 var PREVIEW_X    = box_x + box_width + pad;
 var PREVIEW_Y    = box_y + pad;
 
-// Draw the black 9-slice background
 if (sprite_exists(spr_box1)) {
     draw_set_color(c_black);
     draw_sprite_stretched(spr_box1, 0,
@@ -193,9 +191,42 @@ if (menu_state == "item_select"
     }
 }
 
-// --- Reset Drawing State ---
-draw_set_alpha(1.0);
-draw_set_color(c_white);
-draw_set_font(-1);
+// 7) Draw Currency Display in Top‐Left
+var curTxt = "Gold: " + string(global.party_currency);
 draw_set_halign(fa_left);
 draw_set_valign(fa_top);
+draw_set_font(Font1);
+
+// measure text
+var tw = string_width(curTxt);
+var th = string_height(curTxt);
+var padC = 8;
+var boxX = 8;
+var boxY = 8;
+var boxW = tw + padC * 2;
+var boxH = th + padC * 2;
+
+// background box
+if (sprite_exists(spr_box1)) {
+    draw_sprite_stretched(spr_box1, 0,
+        boxX, boxY,
+        boxW, boxH
+    );
+} else {
+    draw_set_alpha(0.8);
+    draw_set_color(c_black);
+    draw_rectangle(boxX, boxY, boxX + boxW, boxY + boxH, false);
+    draw_set_alpha(1);
+    draw_set_color(c_white);
+}
+
+// text
+draw_set_color(c_white);
+draw_text(boxX + padC, boxY + padC, curTxt);
+
+// --- Reset Drawing State ---
+draw_set_alpha(1);
+draw_set_color(c_white);
+draw_set_halign(fa_left);
+draw_set_valign(fa_top);
+draw_set_font(-1);
