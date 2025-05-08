@@ -34,7 +34,7 @@ if (room == rm_battle) {
         show_debug_message(" -> No music playing before battle. Storing return room: [" + room_get_name(pre_battle_room) + "]");
     }
     // Play battle music with fade
-    var _battle_music = noone; // <<< SET YOUR BATTLE MUSIC ASSET HERE
+    var _battle_music = Battletheme; // <<< SET YOUR BATTLE MUSIC ASSET HERE
     scr_change_music(_battle_music, true, 15, fade_time_ms); // Pass fade time
 
 } else if (_was_pre_battle_asset != noone) {
@@ -54,6 +54,7 @@ if (room == rm_battle) {
     var _new_music = noone;
     switch (room) {
         case Room2: _new_music = noone; break;
+        case rm_battle: _new_music = Battletheme; break;
         //case Room1: noone;
         case Room1: _new_music = NighttimeintheCity; break;
         //case rm_dungeon1: _new_music = mus_dungeon_theme; break;
