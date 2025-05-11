@@ -46,6 +46,7 @@
     {"$GMFolder":"","%Name":"Music","folderPath":"folders/Sounds/Music.yy","name":"Music","resourceType":"GMFolder","resourceVersion":"2.0",},
     {"$GMFolder":"","%Name":"RPGMaker","folderPath":"folders/Sounds/RPGMaker.yy","name":"RPGMaker","resourceType":"GMFolder","resourceVersion":"2.0",},
     {"$GMFolder":"","%Name":"Sprites","folderPath":"folders/Sprites.yy","name":"Sprites","resourceType":"GMFolder","resourceVersion":"2.0",},
+    {"$GMFolder":"","%Name":"Bat","folderPath":"folders/Sprites/Bat.yy","name":"Bat","resourceType":"GMFolder","resourceVersion":"2.0",},
     {"$GMFolder":"","%Name":"Battle Backs","folderPath":"folders/Sprites/Battle Backs.yy","name":"Battle Backs","resourceType":"GMFolder","resourceVersion":"2.0",},
     {"$GMFolder":"","%Name":"Battle","folderPath":"folders/Sprites/Battle.yy","name":"Battle","resourceType":"GMFolder","resourceVersion":"2.0",},
     {"$GMFolder":"","%Name":"Animations","folderPath":"folders/Sprites/Battle/Animations.yy","name":"Animations","resourceType":"GMFolder","resourceVersion":"2.0",},

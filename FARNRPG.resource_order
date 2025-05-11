@@ -32,6 +32,7 @@
     {"name":"Good; not used","order":9,"path":"folders/Sounds/Good; not used.yy",},
     {"name":"Music","order":12,"path":"folders/Sounds/Music.yy",},
     {"name":"RPGMaker","order":7,"path":"folders/Sounds/RPGMaker.yy",},
+    {"name":"Bat","order":40,"path":"folders/Sprites/Bat.yy",},
     {"name":"Battle Backs","order":36,"path":"folders/Sprites/Battle Backs.yy",},
     {"name":"Battle","order":38,"path":"folders/Sprites/Battle.yy",},
     {"name":"Animations","order":12,"path":"folders/Sprites/Battle/Animations.yy",},
