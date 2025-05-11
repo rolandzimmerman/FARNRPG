@@ -22,8 +22,8 @@ function scr_InitRoomMap() {
     var r1 = Room1;
     var m1 = ds_map_create();
     ds_map_add(m1, "left",  Room2);
-    ds_map_add(m1, "right", noone);
-    ds_map_add(m1, "above", noone);
+    ds_map_add(m1, "right", rm_debug_1);
+    ds_map_add(m1, "above", rm_debug);
     ds_map_add(m1, "below", noone);
     ds_map_add(global.room_map, r1, m1);
 
@@ -35,6 +35,22 @@ function scr_InitRoomMap() {
     ds_map_add(m2, "above", noone);
     ds_map_add(m2, "below", noone);
     ds_map_add(global.room_map, r2, m2);
+    
+    var r3 = rm_debug;
+    var m3 = ds_map_create();
+    ds_map_add(m3, "left",  noone);
+    ds_map_add(m3, "right", noone);
+    ds_map_add(m3, "above", noone);
+    ds_map_add(m3, "below", Room1);
+    ds_map_add(global.room_map, r3, m3);
+    
+        var r4 = rm_debug_1;
+    var m4 = ds_map_create();
+    ds_map_add(m4, "left",  Room1);
+    ds_map_add(m4, "right", noone);
+    ds_map_add(m4, "above", noone);
+    ds_map_add(m4, "below", noone);
+    ds_map_add(global.room_map, r4, m4);
 
     // …add more rooms here…
 

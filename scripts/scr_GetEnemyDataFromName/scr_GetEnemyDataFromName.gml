@@ -137,6 +137,46 @@ function scr_GetEnemyDataFromName(_obj) {
                     { item_key:"bomb", chance:0.75 }
                 ]
             };
+        
+        // --- Nut Thief Runner ---
+        case obj_enemy_monster_cock:
+            return {
+                // Identity
+                name               : "Nut Thief",
+                sprite_index       : Monster_Cock,
+                status             : "none",
+
+                // Stats
+                hp                 : 100,
+                maxhp              : 100,
+                atk                :  12,
+                def                :  10,
+                matk               :  20,
+                mdef               :  20,
+                spd                :  10,
+                luk                :  6,
+                xp                 : 250,
+
+                // Combat FX
+                attack_sprite      : spr_pow,
+                attack_sound       : snd_punch,
+                attack_element     : "physical",
+                resistances        : default_resistances,
+
+                // Death & Corpse
+                death_anim_sprite  : default_death_anim,
+                corpse_sprite      : default_corpse_sprite,
+
+                // Loot
+                drop_table         : [
+                    { item_key:"potion",   chance:0.20 },
+                    { item_key:"bomb", chance:0.50 }
+                ],
+                steal_table        : [
+                    { item_key:"bomb", chance:0.75 }
+                ]
+            };
+
 
         // --- Default Fallback ---
         default:

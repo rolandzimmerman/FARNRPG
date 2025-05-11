@@ -95,7 +95,7 @@ if (dir_x != 0 || dir_y != 0) global.encounter_timer++;
 var threshold = 100;
 var chance = 25;
 
-if (global.encounter_timer >= threshold) {
+/*if (global.encounter_timer >= threshold) {
     global.encounter_timer = 0;
 
     if (random(100) < chance) {
@@ -118,7 +118,7 @@ if (global.encounter_timer >= threshold) {
         }
     }
 }
-
+*/
 // --- Interaction ---
 var interact = keyboard_check_pressed(vk_space) || gamepad_button_check_pressed(0, gp_face1);
 var npc = instance_place(x, y, obj_npc_parent);

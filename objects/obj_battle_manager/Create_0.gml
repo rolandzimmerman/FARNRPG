@@ -106,7 +106,7 @@ show_debug_message("--- Finished Party spawn, count: " + string(ds_list_size(glo
 
 // --- Spawn Enemies ---
 show_debug_message("--- Spawning Enemies ---");
-var enemy_positions = [ [1632, 800, 1.10], [1504, 544, 0.90], [1344, 288, 0.75], [1792, 576, 1.00], [1664, 320, 0.80] ];
+var enemy_positions = [ [1504, 544, 0.90], [1632, 800, 1.10], [1344, 288, 0.75], [1792, 576, 1.00], [1664, 320, 0.80] ];
 if (variable_global_exists("battle_formation") && is_array(global.battle_formation)) {
     var form = global.battle_formation;
     var _num = array_length(form);
