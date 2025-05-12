@@ -15,7 +15,7 @@ if (variable_global_exists("return_x") && variable_global_exists("return_y")) {
 show_debug_message("--- obj_player Create Event RUNNING (Instance ID: " + string(id) + ") ---");
 
 // Movement & world setup
-move_speed = 2;
+move_speed = 4;
 tilemap = layer_tilemap_get_id(layer_get_id("Tiles_Col")); 
 if (tilemap == -1) show_debug_message("Warning [obj_player Create]: Collision layer 'Tiles_Col' not found!");
 if (script_exists(scr_InitRoomMap)) scr_InitRoomMap();
