@@ -644,6 +644,7 @@
     {"id":{"name":"spr_tileset","path":"sprites/spr_tileset/spr_tileset.yy",},},
     {"id":{"name":"str_tileset","path":"sprites/str_tileset/str_tileset.yy",},},
     {"id":{"name":"Stra_e","path":"sprites/Stra_e/Stra_e.yy",},},
+    {"id":{"name":"Woods_Background___1_","path":"sprites/Woods_Background___1_/Woods_Background___1_.yy",},},
     {"id":{"name":"Woods_Background_","path":"sprites/Woods_Background_/Woods_Background_.yy",},},
     {"id":{"name":"Woods","path":"sprites/Woods/Woods.yy",},},
     {"id":{"name":"Xbutton","path":"sprites/Xbutton/Xbutton.yy",},},
