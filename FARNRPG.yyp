@@ -659,8 +659,8 @@
   "RoomOrderNodes":[
     {"roomId":{"name":"Room1","path":"rooms/Room1/Room1.yy",},},
     {"roomId":{"name":"Room2","path":"rooms/Room2/Room2.yy",},},
-    {"roomId":{"name":"rm_battle","path":"rooms/rm_battle/rm_battle.yy",},},
     {"roomId":{"name":"rm_debug","path":"rooms/rm_debug/rm_debug.yy",},},
+    {"roomId":{"name":"rm_battle","path":"rooms/rm_battle/rm_battle.yy",},},
     {"roomId":{"name":"rm_debug_1","path":"rooms/rm_debug_1/rm_debug_1.yy",},},
   ],
   "templateType":"game",
